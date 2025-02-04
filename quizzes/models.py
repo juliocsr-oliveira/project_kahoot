@@ -1,10 +1,10 @@
-from django.contrib.auth.models import User
 from django.db import models
+from django.conf import settings
 
 class Quiz(models.Model):
     titulo = models.CharField(max_length=255)
     descricao = models.TextField(blank = True, null = True)
-    usuario = models.ForeignKey(User, on_delete = models.CASCADE)
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete = models.CASCADE)
     data_criação = models.DateTimeField(auto_now_add= True)
 
     def __str__(self):
