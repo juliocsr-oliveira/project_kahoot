@@ -43,12 +43,13 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'galeria',
     'quizzes',
-    'accounts',
+    'account',
     'rest_framework',
     'rest_framework_simplejwt',
+    
 ]
 
-AUTHENTICATION_BACKENDS = 'accounts.CustomUser'
+AUTH_USER_MODEL = 'account.CustomUser'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -86,15 +87,8 @@ WSGI_APPLICATION = 'setup.wsgi.application'
 
 DATABASES = {
     'default': {
-        'ENGINE': 'sql_server.pyodbc',
-        'NAME': 'DESKTOP-FGGNGU3',
-        'USER': 'sa',
-        'PASSWORD': 'jcesar061998',
-        'HOST': 'DESKTOP-FGGNGU3',  # Ex: "127.0.0.1" ou "nome_do_servidor"
-        'PORT': '',  # Porta padrão do SQL Server
-        'OPTIONS': {
-            'driver': 'ODBC Driver 17 for SQL Server',
-        },
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
     }
 }
 
