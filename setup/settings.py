@@ -44,9 +44,11 @@ INSTALLED_APPS = [
     'galeria',
     'quizzes',
     'accounts',
+    'rest_framework',
+    'rest_framework_simplejwt',
 ]
 
-AUTH_USER_MODEL = 'accounts.CustomUser'
+AUTHENTICATION_BACKENDS = 'accounts.CustomUser'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -83,7 +85,6 @@ WSGI_APPLICATION = 'setup.wsgi.application'
 # https://docs.djangoproject.com/en/5.1/ref/settings/#databases
 
 DATABASES = {
-  DATABASES = {
     'default': {
         'ENGINE': 'sql_server.pyodbc',
         'NAME': 'DESKTOP-FGGNGU3',
@@ -95,8 +96,6 @@ DATABASES = {
             'driver': 'ODBC Driver 17 for SQL Server',
         },
     }
-}
-
 }
 
 
