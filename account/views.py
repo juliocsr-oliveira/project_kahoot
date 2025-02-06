@@ -1,7 +1,7 @@
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
-from rest_framework_simplejwt.tokens import RefreshToken    
+from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model
 from .serializers import RegisterSerializer
 
@@ -20,4 +20,4 @@ class RegisterView(APIView):
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
             })
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)        # filepath: /C:/Users/juliocp/project_kahoot/setup/settings.py
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
