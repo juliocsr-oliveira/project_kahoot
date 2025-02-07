@@ -1,3 +1,4 @@
+from django.shortcuts import render
 from rest_framework import viewsets
 from .models import Quiz
 from .serializers import QuizSerializer
@@ -10,3 +11,6 @@ class QuizViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(usuario=self.request.user)
+
+def home(request):
+    return render(request, 'quizzes/home.html')

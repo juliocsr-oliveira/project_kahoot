@@ -6,4 +6,5 @@ urlpatterns = [
     path('', include('galeria.urls')),
     path('api/account/', include('account.urls')),
     path('api/', include('quizzes.urls')),
+    path('home/', include('quizzes.urls')),  # Adicione esta linha
 ]
