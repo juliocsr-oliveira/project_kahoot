@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aguardando Início</title>
+</head>
+<body>
+    <h1>Aguardando o Host Iniciar o Quiz</h1>
+    <p>Sala: {{ sala.codigo }}</p>
+    <p>Quiz: {{ sala.quiz.titulo }}</p>
+    {% if request.user == sala.quiz.usuario %}
+        <form method="post" action="{% url 'iniciar_quiz' sala.id %}">
+            {% csrf_token %}
+            <button type="submit">Iniciar Quiz</button>
+        </form>
+    {% endif %}
+</body>
+</html>

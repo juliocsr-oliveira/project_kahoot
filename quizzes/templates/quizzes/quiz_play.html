@@ -1,0 +1,29 @@
+<!-- filepath: /c:/Users/juliocp/project_kahoot/templates/quizzes/quiz_play.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jogar Quiz</title>
+</head>
+<body>
+    <h1>Jogar Quiz: {{ quiz.titulo }}</h1>
+    <form method="post">
+        {% csrf_token %}
+        {% for pergunta in quiz.pergunta_set.all %}
+            <div>
+                <p>{{ pergunta.texto }}</p>
+                {% if pergunta.tipo == 'MC' %}
+                    {% for resposta in pergunta.resposta_set.all %}
+                        <input type="radio" name="pergunta_{{ pergunta.id }}" value="{{ resposta.texto }}">{{ resposta.texto }}<br>
+                    {% endfor %}
+                {% elif pergunta.tipo == 'VF' %}
+                    <input type="radio" name="pergunta_{{ pergunta.id }}" value="Verdadeiro">Verdadeiro<br>
+                    <input type="radio" name="pergunta_{{ pergunta.id }}" value="Falso">Falso<br>
+                {% endif %}
+            </div>
+        {% endfor %}
+        <button type="submit">Enviar Respostas</button>
+    </form>
+</body>
+</html>

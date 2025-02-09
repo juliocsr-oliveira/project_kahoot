@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home</title>
+</head>
+<body>
+    <h1>Bem-vindo!</h1>
+    <p>Escolha uma opção:</p>
+    <ul>
+        <li><a href="{% url 'quiz_create' %}">Criar um Quiz</a></li>
+        {% for quiz in quizzes %}
+            <li><a href="{% url 'quiz_play' quiz_id=quiz.id %}">Jogar Quiz: {{ quiz.titulo }}</a></li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
