@@ -9,7 +9,18 @@
     <h1>Registro</h1>
     <form method="post">
         {% csrf_token %}
-        {{ form.as_p }}
+        <label for="id_username">Nome de Usuário:</label>
+        <input type="text" name="username" id="id_username" required><br>
+        
+        <label for="id_email">Email:</label>
+        <input type="email" name="email" id="id_email" required><br>
+        
+        <label for="id_password1">Senha:</label>
+        <input type="password" name="password1" id="id_password1" required><br>
+        
+        <label for="id_password2">Confirme sua de Senha:</label>
+        <input type="password" name="password2" id="id_password2" required><br>
+        
         <button type="submit">Registrar</button>
     </form>
     <p>Já tem uma conta? <a href="{% url 'login' %}">Faça login aqui</a></p>

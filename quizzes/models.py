@@ -1,5 +1,6 @@
 from django.db import models
 from django.conf import settings
+from django.core.exceptions import ValidationError
 
 class Quiz(models.Model):
     titulo = models.CharField(max_length=255)
@@ -9,6 +10,10 @@ class Quiz(models.Model):
 
     def __str__(self):
         return self.titulo
+
+    def clean(self):
+        if self.pergunta_set.count() < 3:
+            raise ValidationError('O quiz deve ter pelo menos 3 perguntas.')
 
 class Pergunta(models.Model):
     TIPOS_PERGUNTA = [

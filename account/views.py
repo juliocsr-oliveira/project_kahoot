@@ -8,12 +8,17 @@ from django.core.mail import send_mail
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.urls import reverse
+from django.http import HttpResponseRedirect
+from django.shortcuts import render
 from .serializers import RegisterSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer
 
 User = get_user_model()
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        return render(request, 'quizzes/register.html')
 
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
@@ -25,7 +30,7 @@ class RegisterView(APIView):
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
             })
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return HttpResponseRedirect('/')  # Redireciona para a home após o registro
 
 class LogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -35,12 +40,15 @@ class LogoutView(APIView):
             refresh_token = request.data["refresh"]
             token = RefreshToken(refresh_token)
             token.blacklist()
-            return Response(status=status.HTTP_205_RESET_CONTENT)
+            return HttpResponseRedirect('/')  # Redireciona para a home após o logout
         except Exception as e:
             return Response(status=status.HTTP_400_BAD_REQUEST)
 
 class PasswordResetRequestView(APIView):
     permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        return render(request, 'quizzes/password_reset.html')
 
     def post(self, request):
         serializer = PasswordResetRequestSerializer(data=request.data)
@@ -61,6 +69,9 @@ class PasswordResetRequestView(APIView):
 
 class PasswordResetConfirmView(APIView):
     permission_classes = [permissions.AllowAny]
+
+    def get(self, request, uidb64, token):
+        return render(request, 'quizzes/password_reset_confirm.html', {'uidb64': uidb64, 'token': token})
 
     def post(self, request, uidb64, token):
         serializer = PasswordResetConfirmSerializer(data=request.data)

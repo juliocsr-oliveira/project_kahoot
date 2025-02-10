@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Quiz, Pergunta, Resposta
+from .models import Quiz, Pergunta, Resposta, Sala, Jogador, Resultado
 
 class RespostaSerializer(serializers.ModelSerializer):
     class Meta:
@@ -7,16 +7,27 @@ class RespostaSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 class PerguntaSerializer(serializers.ModelSerializer):
-    respostas = RespostaSerializer(many=True, read_only=True)
-
     class Meta:
         model = Pergunta
         fields = '__all__'
 
 class QuizSerializer(serializers.ModelSerializer):
-    perguntas = PerguntaSerializer(many=True, read_only=True)
-
     class Meta:
         model = Quiz
+        fields = '__all__'
+
+class SalaSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Sala
+        fields = '__all__'
+
+class JogadorSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Jogador
+        fields = '__all__'
+
+class ResultadoSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Resultado
         fields = '__all__'
 

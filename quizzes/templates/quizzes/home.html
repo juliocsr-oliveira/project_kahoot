@@ -2,16 +2,44 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Home</title>
+    <script>
+        // Adiciona o token CSRF ao cabeçalho das requisições AJAX
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    // Verifica se o cookie começa com o nome desejado
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        const csrftoken = getCookie('csrftoken');
+
+        // Configura o axios para enviar o token CSRF
+        axios.defaults.headers.common['X-CSRFToken'] = csrftoken;
+    </script>
 </head>
 <body>
-    <h1>Bem-vindo!</h1>
-    <p>Escolha uma opção:</p>
+    <h1>Bem-vindo ao Kahoot</h1>
+    <h2>Quizzes Criados por Você:</h2>
     <ul>
-        <li><a href="{% url 'quiz_create' %}">Criar um Quiz</a></li>
         {% for quiz in quizzes %}
-            <li><a href="{% url 'quiz_play' quiz_id=quiz.id %}">Jogar Quiz: {{ quiz.titulo }}</a></li>
+            <li>
+                {{ quiz.titulo }}
+                {% if quiz.sala_set.exists %}
+                    <a href="{% url 'sala_espera' quiz.sala_set.first.id %}">Jogar Kahoot</a>
+                {% else %}
+                    <span>Sem sala disponível</span>
+                {% endif %}
+            </li>
         {% endfor %}
     </ul>
 </body>

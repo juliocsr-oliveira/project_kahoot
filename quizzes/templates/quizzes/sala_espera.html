@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Sala de Espera</title>
+</head>
+<body>
+    <h1>Sala de Espera</h1>
+    <p>Código da Sala: {{ sala.codigo }}</p>
+    <p>Compartilhe este código com outros jogadores para que eles possam entrar na sala.</p>
+    <h2>Jogadores na Sala:</h2>
+    <ul>
+        {% for jogador in jogadores %}
+            <li>{{ jogador.nome }}</li>
+        {% endfor %}
+    </ul>
+    {% if request.user == sala.quiz.usuario %}
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" name="iniciar">Iniciar Kahoot</button>
+        </form>
+    {% endif %}
+</body>
+</html>
