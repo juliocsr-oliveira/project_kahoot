@@ -16,8 +16,8 @@ urlpatterns = [
     path('login/', auth_views.LoginView.as_view(template_name='quizzes/login.html'), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='/'), name='logout'),
 
-    # 🔥 Aqui estamos registrando a rota para buscar quizzes pelo ID
+   
     path('quizzes/<int:pk>/', QuizViewSet.as_view({'get': 'retrieve'}), name='quiz-detail'),
 
-    path('', include(router.urls)),  # Mantenha o router para outras rotas do ViewSet
+    path('', include(router.urls)), 
 ]

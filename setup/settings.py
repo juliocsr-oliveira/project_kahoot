@@ -50,14 +50,6 @@ INSTALLED_APPS = [
     'corsheaders',
 ]
 
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # Adicione o endereço do seu frontend React
-]
-
-CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000",
-]
-
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.SessionAuthentication',
@@ -87,6 +79,21 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+MIDDLEWARE.insert(1, 'corsheaders.middleware.CorsMiddleware')  # ✅ Adicione logo após SecurityMiddleware
+
+CORS_ALLOW_CREDENTIALS = True  # ✅ Permite envio de cookies (sessões, CSRF)
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",  # ✅ Adapte para o seu frontend
+]
+
+CSRF_TRUSTED_ORIGINS = [
+    "http://localhost:3000",  # ✅ Permite que o frontend acesse recursos protegidos
+]
+
+CSRF_COOKIE_HTTPONLY = False  # ✅ Permite que o frontend acesse o cookie CSRF (remova após testes)
+CSRF_COOKIE_SAMESITE = None  # ✅ Permite CSRF entre domínios diferentes
+CSRF_COOKIE_SECURE = False  # ✅ Apenas para desenvolvimento (mude para True em produção)
 
 ROOT_URLCONF = 'setup.urls'
 
