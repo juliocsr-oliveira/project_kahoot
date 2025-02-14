@@ -2,30 +2,33 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
 from rest_framework_simplejwt.tokens import RefreshToken
-from django.contrib.auth import get_user_model
-from django.contrib.auth.tokens import default_token_generator
-from django.core.mail import send_mail
-from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
-from django.utils.encoding import force_bytes, force_str
-from django.urls import reverse
-from django.http import HttpResponseRedirect
-from django.shortcuts import render, redirect
+from django.contrib.auth import get_user_model, authenticate, login
+from django.shortcuts import redirect, render
 from .serializers import RegisterSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer
-from django.contrib.auth import login, authenticate
 from django.http import JsonResponse
-from rest_framework_simplejwt.views import TokenObtainPairView
-from django.contrib.auth.views import LoginView
-from rest_framework.permissions import AllowAny
+from django.core.mail import send_mail
+from django.utils.http import urlsafe_base64_encode
+from django.utils.encoding import force_bytes
+from django.contrib.auth.tokens import default_token_generator
+from django.urls import reverse
+import logging
+
+# Definir o logger
+logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
 class UnifiedLoginView(APIView):
-    permission_classes = [AllowAny]
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        return render(request, 'quizzes/login.html')
 
     def get(self, request, *args, **kwargs):
         return render(request, 'quizzes/login.html')
     
     def post(self, request, *args, **kwargs):
+        # Se a requisição for JSON (para API), faz login com JWT
         if request.content_type == "application/json":
             username = request.data.get('username')
             password = request.data.get('password')
@@ -48,7 +51,7 @@ class UnifiedLoginView(APIView):
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
-                return redirect('home.html')  # Redireciona para a home se login for bem-sucedido
+                return redirect('/')  # Redireciona para a home se login for bem-sucedido
             else:
                 return JsonResponse({"error": "Credenciais inválidas"}, status=401)
 
@@ -59,10 +62,12 @@ class RegisterView(APIView):
         return render(request, 'quizzes/register.html')
 
     def post(self, request):
+        print("dados", request.data)
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
-            return redirect(reverse('login')) 
+            user = serializer.save()
+            refresh = RefreshToken.for_user(user)
+            return redirect('quizzes/login') 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LogoutView(APIView):
@@ -70,12 +75,12 @@ class LogoutView(APIView):
 
     def post(self, request):
         try:
-            refresh_token = request.data["refresh"]
+            refresh_token = request.data.get("refresh")
             token = RefreshToken(refresh_token)
             token.blacklist()
-            return HttpResponseRedirect('/')  # Redireciona para a home após o logout
+            return redirect('/')  # Redireciona para a home após logout
         except Exception as e:
-            return Response(status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Erro ao realizar logout."}, status=status.HTTP_400_BAD_REQUEST)
 
 class PasswordResetRequestView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -84,21 +89,20 @@ class PasswordResetRequestView(APIView):
         return render(request, 'quizzes/password_reset.html')
 
     def post(self, request):
-        serializer = PasswordResetRequestSerializer(data=request.data)
-        if serializer.is_valid():
-            user = User.objects.get(email=serializer.validated_data['email'])
+        email = request.data.get("email")
+        user = User.objects.filter(email=email).first()
+        if user:
             token = default_token_generator.make_token(user)
             uid = urlsafe_base64_encode(force_bytes(user.pk))
             reset_url = request.build_absolute_uri(reverse('password_reset_confirm', kwargs={'uidb64': uid, 'token': token}))
             send_mail(
-                'Password Reset Request',
-                f'Use the link abaixo para resetar sua senha:\n{reset_url}',
+                'Redefinição de Senha',
+                f'Use o link abaixo para redefinir sua senha: {reset_url}',
                 'no-reply@yourdomain.com',
                 [user.email],
                 fail_silently=False,
             )
-            return Response({'message': 'Password reset link sent'}, status=status.HTTP_200_OK)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return redirect('/login/')  # Redireciona para a página de login após redefinição de senha
 
 class PasswordResetConfirmView(APIView):
     permission_classes = [permissions.AllowAny]
