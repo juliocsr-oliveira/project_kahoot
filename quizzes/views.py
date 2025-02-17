@@ -9,14 +9,6 @@ from django.core.exceptions import ValidationError
 from django.contrib.auth import views as auth_views
 from django.shortcuts import redirect
 
-
-class CustomLoginView(auth_views.LoginView):
-    template_name = 'quizzes/login.html'
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        return redirect('token_obtain_pair')
-
 class QuizViewSet(viewsets.ModelViewSet):
     queryset = Quiz.objects.all()
     serializer_class = QuizSerializer

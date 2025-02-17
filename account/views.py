@@ -9,32 +9,48 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.urls import reverse
 from django.http import HttpResponseRedirect
-from django.shortcuts import render
+from django.shortcuts import render, redirect
 from .serializers import RegisterSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer
 from django.contrib.auth import login, authenticate
 from django.http import JsonResponse
 from rest_framework_simplejwt.views import TokenObtainPairView
 from django.contrib.auth.views import LoginView
+from rest_framework.permissions import AllowAny
 
 User = get_user_model()
 
-class UnifiedLoginView(LoginView):
-    template_name = 'quizzes/login.html'  # Template compartilhado para login
+class UnifiedLoginView(APIView):
+    permission_classes = [AllowAny]
 
+    def get(self, request, *args, **kwargs):
+        return render(request, 'quizzes/login.html')
+    
     def post(self, request, *args, **kwargs):
-        """Trata login normal (sessão) e login JWT"""
         if request.content_type == "application/json":
-            return TokenObtainPairView.as_view()(request, *args, **kwargs)  # Login JWT
+            username = request.data.get('username')
+            password = request.data.get('password')
+
+            user = authenticate(username=username, password=password)
+            if user is not None:
+                refresh = RefreshToken.for_user(user)
+                return Response({
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                }, status=status.HTTP_200_OK)
+            else:
+                return Response({"error": "Credenciais inválidas"}, status=status.HTTP_401_UNAUTHORIZED)
+
+        # Caso contrário, processa login tradicional via formulário
         else:
             username = request.POST.get('username')
             password = request.POST.get('password')
+
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
-                return HttpResponseRedirect('/')  # Redireciona para a home após o login
+                return redirect('home.html')  # Redireciona para a home se login for bem-sucedido
             else:
-                return render(request, self.template_name, {"error": "Credenciais inválidas"})
-        return HttpResponseRedirect('/')  # Redireciona para a home após o login
+                return JsonResponse({"error": "Credenciais inválidas"}, status=401)
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -46,12 +62,7 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()
-            user = User.objects.get(username=serializer.data['username'])
-            refresh = RefreshToken.for_user(user)
-            return Response({
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            })
+            return redirect(reverse('login')) 
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LogoutView(APIView):
