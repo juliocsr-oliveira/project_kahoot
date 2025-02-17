@@ -11,9 +11,9 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/account/', include('account.urls')),
     path('api/', api_root),
-    path('account/', include('django.contrib.auth.urls')),  
+    path('account/', include('django.contrib.auth.urls')),
     path('', home, name='home'),
-    path('api/', include('quizzes.urls')),
+    path('api/quizzes/', include('quizzes.urls')),
 ]
 
 urlpatterns += [

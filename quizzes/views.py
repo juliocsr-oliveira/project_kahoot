@@ -6,10 +6,21 @@ from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.core.exceptions import ValidationError
+from django.contrib.auth import views as auth_views
+from django.shortcuts import redirect
+
+
+class CustomLoginView(auth_views.LoginView):
+    template_name = 'quizzes/login.html'
+
+    def form_valid(self, form):
+        response = super().form_valid(form)
+        return redirect('token_obtain_pair')
 
 class QuizViewSet(viewsets.ModelViewSet):
     queryset = Quiz.objects.all()
     serializer_class = QuizSerializer
+    permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
         response = super().create(request, *args, **kwargs)

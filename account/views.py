@@ -11,8 +11,30 @@ from django.urls import reverse
 from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from .serializers import RegisterSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer
+from django.contrib.auth import login, authenticate
+from django.http import JsonResponse
+from rest_framework_simplejwt.views import TokenObtainPairView
+from django.contrib.auth.views import LoginView
 
 User = get_user_model()
+
+class UnifiedLoginView(LoginView):
+    template_name = 'quizzes/login.html'  # Template compartilhado para login
+
+    def post(self, request, *args, **kwargs):
+        """Trata login normal (sessão) e login JWT"""
+        if request.content_type == "application/json":
+            return TokenObtainPairView.as_view()(request, *args, **kwargs)  # Login JWT
+        else:
+            username = request.POST.get('username')
+            password = request.POST.get('password')
+            user = authenticate(request, username=username, password=password)
+            if user is not None:
+                login(request, user)
+                return HttpResponseRedirect('/')  # Redireciona para a home após o login
+            else:
+                return render(request, self.template_name, {"error": "Credenciais inválidas"})
+        return HttpResponseRedirect('/')  # Redireciona para a home após o login
 
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -30,7 +52,7 @@ class RegisterView(APIView):
                 'refresh': str(refresh),
                 'access': str(refresh.access_token),
             })
-        return HttpResponseRedirect('/')  # Redireciona para a home após o registro
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class LogoutView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -59,7 +81,7 @@ class PasswordResetRequestView(APIView):
             reset_url = request.build_absolute_uri(reverse('password_reset_confirm', kwargs={'uidb64': uid, 'token': token}))
             send_mail(
                 'Password Reset Request',
-                f'Use the link below to reset your password:\n{reset_url}',
+                f'Use the link abaixo para resetar sua senha:\n{reset_url}',
                 'no-reply@yourdomain.com',
                 [user.email],
                 fail_silently=False,
