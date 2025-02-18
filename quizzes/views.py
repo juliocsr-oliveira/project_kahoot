@@ -8,6 +8,9 @@ from rest_framework.decorators import api_view
 from django.core.exceptions import ValidationError
 from django.contrib.auth import views as auth_views
 from django.shortcuts import redirect
+import random
+import string
+import time
 
 class QuizViewSet(viewsets.ModelViewSet):
     queryset = Quiz.objects.all()
@@ -24,12 +27,16 @@ class QuizViewSet(viewsets.ModelViewSet):
             return Response({'detail': str(e)}, status=400)
         return response
 
+def generate_room_code():
+    return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+
 def home(request):
     quizzes = Quiz.objects.all()
     return render(request, 'quizzes/home.html', {'quizzes': quizzes})
 
-def iniciar_quiz(request, sala_id):
-    sala = get_object_or_404(Sala, id=sala_id)
+def iniciar_quiz(request, quiz_id):
+    quiz = get_object_or_404(Quiz, id=quiz_id)
+    sala, created = Sala.objects.get_or_create(quiz=quiz, ativa=True, defaults={'codigo': generate_room_code()})
     sala.iniciada = True
     sala.save()
     return redirect('jogar_quiz', quiz_id=sala.quiz.id)
@@ -45,20 +52,20 @@ def jogar_quiz(request, quiz_id):
         return render(request, 'quizzes/aguardando_inicio.html', {'sala': sala})
 
     if request.method == 'POST':
-        # Lógica para calcular a pontuação do jogador
         jogador = Jogador.objects.get(nome=request.user.username, sala=sala)
         pontuacao = 0
+        tempo_total = 0
         for pergunta in quiz.pergunta_set.all():
             resposta_correta = pergunta.resposta_set.get(correta=True)
+            inicio_tempo = time.time()
             resposta_usuario = request.POST.get(f'pergunta_{pergunta.id}')
+            tempo_resposta = time.time() - inicio_tempo
             if resposta_usuario == resposta_correta.texto:
-                pontuacao += pergunta.pontuacao  # Usa a pontuação definida pelo usuário
-        jogador.pontuacao = pontuacao
+                pontuacao += pergunta.pontuacao
+            tempo_total += tempo_resposta
+        jogador.pontuacao = pontuacao + (1 / (tempo_total + 0.001))  # Desempate baseado no tempo
         jogador.save()
-
-        # Calcular o ranking
-        ranking = sala.calcular_ranking()
-
+        ranking = sorted(Jogador.objects.filter(sala=sala), key=lambda j: (-j.pontuacao, j.pontuacao % 1))
         return render(request, 'quizzes/resultado.html', {'ranking': ranking})
 
     return render(request, 'quizzes/quiz_play.html', {'quiz': quiz})

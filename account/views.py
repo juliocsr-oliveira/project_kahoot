@@ -13,16 +13,13 @@ from django.contrib.auth.tokens import default_token_generator
 from django.urls import reverse
 import logging
 
-# Definir o logger
+
 logger = logging.getLogger(__name__)
 
 User = get_user_model()
 
 class UnifiedLoginView(APIView):
     permission_classes = [permissions.AllowAny]
-
-    def get(self, request):
-        return render(request, 'quizzes/login.html')
 
     def get(self, request, *args, **kwargs):
         return render(request, 'quizzes/login.html')

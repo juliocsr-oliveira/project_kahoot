@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -15,17 +15,58 @@
         <label for="descricao">Descrição:</label>
         <textarea id="descricao" name="descricao"></textarea><br><br>
 
-        <label for="tipo">Tipo de Pergunta:</label>
-        <select id="tipo" name="tipo">
-            <option value="MC">Múltipla Escolha</option>
-            <option value="VF">Verdadeiro ou Falso</option>
-        </select><br><br>
+        <div id="perguntas-container">
+            <h2>Perguntas</h2>
+        </div>
 
-        <label for="pontuacao">Pontuação por Resposta Correta:</label>
-        <input type="number" id="pontuacao" name="pontuacao" value="10" required><br><br>
-
-        <!-- Adicione campos para criar perguntas e respostas -->
-        <button type="submit">Criar</button>
+        <button type="button" onclick="adicionarPergunta()">Adicionar Pergunta</button>
+        <br><br>
+        
+        <button type="submit">Criar Quiz</button>
     </form>
+
+    <script>
+        let perguntaIndex = 0;
+
+        function adicionarPergunta() {
+            perguntaIndex++;
+            let container = document.getElementById("perguntas-container");
+
+            let perguntaDiv = document.createElement("div");
+            perguntaDiv.innerHTML = `
+                <h3>Pergunta ${perguntaIndex}</h3>
+                <label for="pergunta_${perguntaIndex}">Texto:</label>
+                <input type="text" name="pergunta_${perguntaIndex}" required><br>
+
+                <label for="tipo_${perguntaIndex}">Tipo:</label>
+                <select name="tipo_${perguntaIndex}">
+                    <option value="MC">Múltipla Escolha</option>
+                    <option value="VF">Verdadeiro ou Falso</option>
+                </select><br>
+
+                <div id="respostas_${perguntaIndex}">
+                    <h4>Respostas</h4>
+                </div>
+
+                <button type="button" onclick="adicionarResposta(${perguntaIndex})">Adicionar Resposta</button>
+                <br><br>
+            `;
+            container.appendChild(perguntaDiv);
+        }
+
+        function adicionarResposta(perguntaIndex) {
+            let respostasDiv = document.getElementById(`respostas_${perguntaIndex}`);
+            let respostaIndex = respostasDiv.children.length + 1;
+
+            let respostaDiv = document.createElement("div");
+            respostaDiv.innerHTML = `
+                <label>Resposta ${respostaIndex}:</label>
+                <input type="text" name="resposta_${perguntaIndex}_${respostaIndex}" required>
+                <input type="radio" name="correta_${perguntaIndex}" value="${respostaIndex}"> Correta
+                <br>
+            `;
+            respostasDiv.appendChild(respostaDiv);
+        }
+    </script>
 </body>
 </html>

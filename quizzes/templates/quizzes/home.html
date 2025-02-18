@@ -35,12 +35,14 @@
             <li>
                 {{ quiz.titulo }}
                 {% if quiz.sala_set.exists %}
-                    <a href="{% url 'sala_espera' quiz.sala_set.first.id %}">Jogar Kahoot</a>
+                    <a href="{% url 'sala_espera' quiz.sala_set.first.id %}">Jogar GabQuiz</a>
                 {% else %}
                     <span>Sem sala disponível</span>
                 {% endif %}
             </li>
         {% endfor %}
     </ul>
+    <button onclick="window.location.href='{% url 'quiz_create' quiz.id %}'">Criar GabQuiz</button>
+    <button onclick="window.location.href='{% url 'sala_espera' quiz.id %}'">Jogar GabQuiz</button>
 </body>
 </html>

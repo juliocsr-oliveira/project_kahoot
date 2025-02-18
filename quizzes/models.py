@@ -1,6 +1,8 @@
 from django.db import models
 from django.conf import settings
 from django.core.exceptions import ValidationError
+import random
+import string
 
 class Quiz(models.Model):
     titulo = models.CharField(max_length=255)
@@ -39,10 +41,21 @@ class Resposta(models.Model):
 
 class Sala(models.Model):
     quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
-    codigo = models.CharField(max_length=10, unique=True)
+    codigo = models.CharField(max_length=10, unique=True, blank=True)
     data_criacao = models.DateTimeField(auto_now_add=True)
     ativa = models.BooleanField(default=True)
     iniciada = models.BooleanField(default=False)  # Indica se a sala foi iniciada pelo host
+
+    def save(self, *args, **kwargs):
+        if not self.codigo:
+            self.codigo = self.gerar_codigo_unico()
+        super().save(*args, **kwargs)
+    
+    def gerar_codigo_unico(self):
+        while True:
+            codigo = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+            if not Sala.objects.filter(codigo=codigo).exists():
+                return codigo
 
     def __str__(self):
         return f"Sala {self.codigo} - {self.quiz.titulo}"
