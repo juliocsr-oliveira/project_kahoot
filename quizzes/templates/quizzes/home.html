@@ -4,14 +4,12 @@
     <meta charset="UTF-8">
     <title>Home</title>
     <script>
-        // Adiciona o token CSRF ao cabeçalho das requisições AJAX
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
                 const cookies = document.cookie.split(';');
                 for (let i = 0; i < cookies.length; i++) {
                     const cookie = cookies[i].trim();
-                    // Verifica se o cookie começa com o nome desejado
                     if (cookie.substring(0, name.length + 1) === (name + '=')) {
                         cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                         break;
@@ -21,28 +19,35 @@
             return cookieValue;
         }
 
-        const csrftoken = getCookie('csrftoken');
-
-        // Configura o axios para enviar o token CSRF
-        axios.defaults.headers.common['X-CSRFToken'] = csrftoken;
+        document.addEventListener("DOMContentLoaded", function () {
+            const csrftoken = getCookie('csrftoken');
+            if (csrftoken) {
+                axios.defaults.headers.common['X-CSRFToken'] = csrftoken;
+            }
+        });
     </script>
 </head>
 <body>
     <h1>Bem-vindo ao GabQuiz</h1>
+    
     <h2>Quizzes Criados por Você:</h2>
     <ul>
         {% for quiz in quizzes %}
             <li>
                 {{ quiz.titulo }}
-                {% if quiz.sala_set.exists %}
-                    <a href="{% url 'sala_espera' quiz.sala_set.first.id %}">Jogar GabQuiz</a>
-                {% else %}
-                    <span>Sem sala disponível</span>
-                {% endif %}
+                {% with quiz.sala_set.filter(ativa=True).first as sala %}
+                    {% if sala %}
+                        <a href="{% url 'sala_espera' sala.id %}">Jogar GabQuiz</a>
+                    {% else %}
+                        <span>Sem sala disponível</span>
+                    {% endif %}
+                {% endwith %}
             </li>
+        {% empty %}
+            <p>Você ainda não criou nenhum quiz.</p>
         {% endfor %}
     </ul>
-    <button onclick="window.location.href='{% url 'quiz_create' quiz.id %}'">Criar GabQuiz</button>
-    <button onclick="window.location.href='{% url 'sala_espera' quiz.id %}'">Jogar GabQuiz</button>
+
+    <button onclick="window.location.href='{% url 'quiz_create' %}';">Criar GabQuiz</button>
 </body>
 </html>
