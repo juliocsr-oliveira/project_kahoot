@@ -40,7 +40,7 @@ class Resposta(models.Model):
         return self.texto
 
 class Sala(models.Model):
-    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE)
+    quiz = models.ForeignKey(Quiz, on_delete=models.CASCADE, related_name='salas')
     codigo = models.CharField(max_length=10, unique=True, blank=True)
     data_criacao = models.DateTimeField(auto_now_add=True)
     ativa = models.BooleanField(default=True)

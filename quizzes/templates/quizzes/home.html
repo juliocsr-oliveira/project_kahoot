@@ -4,12 +4,14 @@
     <meta charset="UTF-8">
     <title>Home</title>
     <script>
+        // Adiciona o token CSRF ao cabeçalho das requisições AJAX
         function getCookie(name) {
             let cookieValue = null;
             if (document.cookie && document.cookie !== '') {
                 const cookies = document.cookie.split(';');
                 for (let i = 0; i < cookies.length; i++) {
                     const cookie = cookies[i].trim();
+                    // Verifica se o cookie começa com o nome desejado
                     if (cookie.substring(0, name.length + 1) === (name + '=')) {
                         cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                         break;
@@ -19,35 +21,31 @@
             return cookieValue;
         }
 
-        document.addEventListener("DOMContentLoaded", function () {
-            const csrftoken = getCookie('csrftoken');
-            if (csrftoken) {
-                axios.defaults.headers.common['X-CSRFToken'] = csrftoken;
-            }
-        });
+        const csrftoken = getCookie('csrftoken');
+
+        // Configura o axios para enviar o token CSRF
+        axios.defaults.headers.common['X-CSRFToken'] = csrftoken;
     </script>
 </head>
 <body>
     <h1>Bem-vindo ao GabQuiz</h1>
-    
     <h2>Quizzes Criados por Você:</h2>
     <ul>
         {% for quiz in quizzes %}
             <li>
                 {{ quiz.titulo }}
-                {% with quiz.sala_set.filter(ativa=True).first as sala %}
-                    {% if sala %}
+                {% if quiz.sala.ativa %}
                         <a href="{% url 'sala_espera' sala.id %}">Jogar GabQuiz</a>
                     {% else %}
                         <span>Sem sala disponível</span>
                     {% endif %}
                 {% endwith %}
             </li>
+        {% endfor %}
         {% empty %}
             <p>Você ainda não criou nenhum quiz.</p>
         {% endfor %}
     </ul>
-
     <button onclick="window.location.href='{% url 'quiz_create' %}';">Criar GabQuiz</button>
 </body>
 </html>
