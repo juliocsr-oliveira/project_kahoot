@@ -11,7 +11,6 @@
                 const cookies = document.cookie.split(';');
                 for (let i = 0; i < cookies.length; i++) {
                     const cookie = cookies[i].trim();
-                    // Verifica se o cookie começa com o nome desejado
                     if (cookie.substring(0, name.length + 1) === (name + '=')) {
                         cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
                         break;
@@ -34,18 +33,30 @@
         {% for quiz in quizzes %}
             <li>
                 {{ quiz.titulo }}
-                {% if quiz.sala.ativa %}
-                        <a href="{% url 'sala_espera' sala.id %}">Jogar GabQuiz</a>
-                    {% else %}
-                        <span>Sem sala disponível</span>
-                    {% endif %}
-                {% endwith %}
+                {% if quiz.sala and quiz.sala.ativa %}
+                    <a href="{% url 'sala_espera' quiz.sala.id %}">Jogar GabQuiz</a>
+                {% else %}
+                    <span>Sem sala disponível</span>
+                {% endif %}
             </li>
-        {% endfor %}
         {% empty %}
             <p>Você ainda não criou nenhum quiz.</p>
         {% endfor %}
     </ul>
-    <button onclick="window.location.href='{% url 'quiz_create' %}';">Criar GabQuiz</button>
+    <button onclick="redirecionar()">
+        Criar GabQuiz
+    </button>
+    
+    <script>
+        function redirecionar() {
+            {% if request.user.is_authenticated %}
+                window.location.href = "{% url 'quiz_create' %}";
+            {% else %}
+                window.location.href = "{% url 'login' %}";
+            {% endif %}
+        }
+    </script>
+    
+
 </body>
 </html>

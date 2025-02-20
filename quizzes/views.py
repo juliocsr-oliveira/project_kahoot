@@ -12,23 +12,45 @@ import random
 import string
 import time
 
+from rest_framework import status
+
 class QuizViewSet(viewsets.ModelViewSet):
     queryset = Quiz.objects.all()
     serializer_class = QuizSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
+        perguntas_data = request.data.get("perguntas", [])
+
+        if len(perguntas_data) < 3:
+            return Response(
+                {"detail": "O quiz deve ter pelo menos 3 perguntas."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         response = super().create(request, *args, **kwargs)
-        quiz_id = response.data.get('id')
+        quiz_id = response.data.get("id")
+
         if quiz_id:
             quiz = Quiz.objects.get(id=quiz_id)
-            quiz.sala_ativa = Sala.objects.filter(quiz=quiz, ativa=True).first()
+
+            # Criar perguntas associadas ao quiz
+            for pergunta in perguntas_data:
+                nova_pergunta = Pergunta.objects.create(
+                    quiz=quiz,
+                    texto=pergunta["texto"],
+                    tipo=pergunta["tipo"],
+                )
+
+                for resposta in pergunta.get("respostas", []):
+                    Resposta.objects.create(
+                        pergunta=nova_pergunta,
+                        texto=resposta["texto"],
+                        correta=(str(resposta["correta"]) == "True")
+                    )
+
             quiz.save()
-            try:
-                quiz.clean()
-            except ValidationError as e:
-                quiz.delete()
-                return Response({'detail': str(e)}, status=400)
+
         return response
 
 def generate_room_code():
