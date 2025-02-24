@@ -7,7 +7,10 @@ from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from django.core.exceptions import ValidationError
 from django.contrib.auth import views as auth_views
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 from django.shortcuts import redirect
+from .models import Quiz, Pergunta, Resposta
 import random
 import string
 import time
@@ -34,7 +37,6 @@ class QuizViewSet(viewsets.ModelViewSet):
         if quiz_id:
             quiz = Quiz.objects.get(id=quiz_id)
 
-            # Criar perguntas associadas ao quiz
             for pergunta in perguntas_data:
                 nova_pergunta = Pergunta.objects.create(
                     quiz=quiz,
@@ -120,6 +122,28 @@ def sala_espera(request, sala_id):
         return redirect('jogar_quiz', quiz_id=sala.quiz.id)
 
     return render(request, 'quizzes/sala_espera.html', {'sala': sala, 'jogadores': jogadores})
+
+
+class DataAnalysisView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        total_quizzes = Quiz.objects.count()
+        total_respostas = Resposta.objects.count()
+        media_pontuacao = Resposta.objects.aggregate(media=Avg('pontuacao'))
+        max_pontuacao = Resposta.objects.aggregate(max=Max('pontuacao'))
+        min_pontuacao = Resposta.objects.aggregate(min=Min('pontuacao'))
+        usuarios_participantes = Resposta.objects.values('usuario').distinct().count()
+
+        data = {
+            "total_quizzes": total_quizzes,
+            "total_respostas": total_respostas,
+            "media_pontuacao": media_pontuacao['media'],
+            "max_pontuacao": max_pontuacao['max'],
+            "min_pontuacao": min_pontuacao['min'],
+            "usuarios_participantes": usuarios_participantes
+        }
+        return Response(data)
 
 @api_view(['GET'])
 def api_home(request):
