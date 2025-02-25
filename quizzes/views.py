@@ -14,8 +14,11 @@ from .models import Quiz, Pergunta, Resposta
 import random
 import string
 import time
-
 from rest_framework import status
+from django.db.models import Count, F, Avg, Sum, StdDev, F
+from .models import Quiz, Pergunta, Resposta, Sala, Jogador
+from rest_framework.views import APIView
+
 
 class QuizViewSet(viewsets.ModelViewSet):
     queryset = Quiz.objects.all()
@@ -54,6 +57,74 @@ class QuizViewSet(viewsets.ModelViewSet):
             quiz.save()
 
         return response
+
+class QuizAnalysisView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request, quiz_id):
+        try:
+            quiz = Quiz.objects.get(id=quiz_id)
+            questions = Question.objects.filter(quiz=quiz)
+            responses = UserResponse.objects.filter(question__in=questions)
+            
+            # Média de acertos por questão
+            accuracy_per_question = questions.annotate(
+                correct_count=Count('userresponse', filter=F('userresponse__is_correct'))
+            ).values('id', 'text', 'correct_count')
+            
+            # Tempo médio de resposta por pergunta
+            avg_response_time = responses.values('question_id').annotate(avg_time=Avg('response_time'))
+            
+            # Questão mais fácil e mais difícil
+            most_correct = accuracy_per_question.order_by('-correct_count').first()
+            least_correct = accuracy_per_question.order_by('correct_count').first()
+            
+            # Média de pontuação da turma
+            avg_score = responses.aggregate(Avg('score'))
+            
+            # Desvio padrão da pontuação
+            std_dev_score = responses.aggregate(StdDev('score'))
+            
+            # Distribuição das respostas
+            answer_distribution = Answer.objects.filter(question__in=questions).annotate(
+                selected_count=Count('userresponse')
+            ).values('question_id', 'text', 'selected_count')
+            
+            # Ranking de eficiência por jogador
+            efficiency_ranking = responses.values('user__username').annotate(
+                total_score=Sum('score'), avg_time=Avg('response_time')
+            ).order_by('-total_score', 'avg_time')
+            
+            # Dificuldade progressiva
+            progressive_difficulty = responses.values('question__order').annotate(
+                correct_count=Count('id', filter=F('is_correct'))
+            ).order_by('question__order')
+            
+            # Impacto do tempo limite
+            time_usage = responses.values('question_id').annotate(
+                avg_time=Avg('response_time'), max_time=F('question__time_limit')
+            )
+            
+            # Comparação entre grupos/turmas (se houver grupos na plataforma)
+            group_performance = responses.values('user__group').annotate(avg_score=Avg('score'))
+            
+            return Response({
+                "accuracy_per_question": list(accuracy_per_question),
+                "avg_response_time": list(avg_response_time),
+                "most_correct": most_correct,
+                "least_correct": least_correct,
+                "avg_score": avg_score,
+                "std_dev_score": std_dev_score,
+                "answer_distribution": list(answer_distribution),
+                "efficiency_ranking": list(efficiency_ranking),
+                "progressive_difficulty": list(progressive_difficulty),
+                "time_usage": list(time_usage),
+                "group_performance": list(group_performance),
+            })
+        
+        except Quiz.DoesNotExist:
+            return Response({"error": "Quiz não encontrado"}, status=404)
+
 
 def generate_room_code():
     while True:

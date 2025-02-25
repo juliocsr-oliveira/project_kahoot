@@ -35,6 +35,9 @@ class Resposta(models.Model):
     pergunta = models.ForeignKey(Pergunta, on_delete=models.CASCADE)
     texto = models.TextField()
     correta = models.BooleanField(default=False)
+    tempo_resposta = models.IntegerField(default=20)  # Tempo de resposta individual de 20 segundos
+    pontuacao = models.IntegerField(default=10)  # Pontuação por resposta correta
+    
 
     def __str__(self):
         return self.texto
