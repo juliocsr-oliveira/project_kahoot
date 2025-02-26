@@ -88,3 +88,11 @@ class Resultado(models.Model):
 
     def __str__(self):
         return f"{self.jogador.nome} - {self.pontuacao_total} pontos"
+    
+class RespostaUsuario(models.Model):
+    jogador = models.ForeignKey(Jogador, on_delete=models.CASCADE)
+    pergunta = models.ForeignKey(Pergunta, on_delete=models.CASCADE)
+    resposta = models.ForeignKey(Resposta, on_delete=models.CASCADE)
+    correta = models.BooleanField()
+    tempo_resposta = models.FloatField()
+    pontuacao = models.IntegerField()

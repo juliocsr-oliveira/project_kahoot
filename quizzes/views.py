@@ -16,7 +16,7 @@ import string
 import time
 from rest_framework import status
 from django.db.models import Count, F, Avg, Sum, StdDev, F
-from .models import Quiz, Pergunta, Resposta, Sala, Jogador
+from .models import Quiz, Pergunta, Resposta, Sala, Jogador, RespostaUsuario
 from rest_framework.views import APIView
 
 
@@ -58,55 +58,66 @@ class QuizViewSet(viewsets.ModelViewSet):
 
         return response
 
+from django.db.models import Count, Avg, StdDev, F, Sum
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .models import Quiz, Pergunta, Resposta, RespostaUsuario
+
 class QuizAnalysisView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request, quiz_id):
         try:
             quiz = Quiz.objects.get(id=quiz_id)
-            questions = Question.objects.filter(quiz=quiz)
-            responses = UserResponse.objects.filter(question__in=questions)
+            perguntas = Pergunta.objects.filter(quiz=quiz)
+            respostas_usuario = RespostaUsuario.objects.filter(pergunta__in=perguntas)
             
             # Média de acertos por questão
-            accuracy_per_question = questions.annotate(
-                correct_count=Count('userresponse', filter=F('userresponse__is_correct'))
-            ).values('id', 'text', 'correct_count')
+            accuracy_per_question = perguntas.annotate(
+                correct_count=Count('respostausuario', filter=F('respostausuario__correta'))
+            ).values('id', 'texto', 'correct_count')
             
             # Tempo médio de resposta por pergunta
-            avg_response_time = responses.values('question_id').annotate(avg_time=Avg('response_time'))
+            avg_response_time = respostas_usuario.values('pergunta_id').annotate(avg_time=Avg('tempo_resposta'))
             
             # Questão mais fácil e mais difícil
             most_correct = accuracy_per_question.order_by('-correct_count').first()
             least_correct = accuracy_per_question.order_by('correct_count').first()
             
             # Média de pontuação da turma
-            avg_score = responses.aggregate(Avg('score'))
+            avg_score = respostas_usuario.aggregate(Avg('pontuacao'))
             
             # Desvio padrão da pontuação
-            std_dev_score = responses.aggregate(StdDev('score'))
+            std_dev_score = respostas_usuario.aggregate(StdDev('pontuacao'))
             
             # Distribuição das respostas
-            answer_distribution = Answer.objects.filter(question__in=questions).annotate(
-                selected_count=Count('userresponse')
-            ).values('question_id', 'text', 'selected_count')
+            answer_distribution = Resposta.objects.filter(pergunta__in=perguntas).annotate(
+                selected_count=Count('respostausuario')
+            ).values('pergunta_id', 'texto', 'selected_count')
             
             # Ranking de eficiência por jogador
-            efficiency_ranking = responses.values('user__username').annotate(
-                total_score=Sum('score'), avg_time=Avg('response_time')
+            efficiency_ranking = respostas_usuario.values('jogador__nome').annotate(
+                total_score=Sum('pontuacao'), avg_time=Avg('tempo_resposta')
             ).order_by('-total_score', 'avg_time')
             
             # Dificuldade progressiva
-            progressive_difficulty = responses.values('question__order').annotate(
-                correct_count=Count('id', filter=F('is_correct'))
-            ).order_by('question__order')
+            progressive_difficulty = respostas_usuario.values('pergunta_id').annotate(
+                correct_count=Count('id', filter=F('correta'))
+            ).order_by('pergunta_id')
             
             # Impacto do tempo limite
-            time_usage = responses.values('question_id').annotate(
-                avg_time=Avg('response_time'), max_time=F('question__time_limit')
+            time_usage = respostas_usuario.values('pergunta_id').annotate(
+                avg_time=Avg('tempo_resposta'), max_time=F('pergunta__tempo_resposta')
             )
             
             # Comparação entre grupos/turmas (se houver grupos na plataforma)
-            group_performance = responses.values('user__group').annotate(avg_score=Avg('score'))
+            group_performance = respostas_usuario.values('jogador__sala').annotate(avg_score=Avg('pontuacao'))
+            
+            # Comparação entre jogadores
+            player_comparison = respostas_usuario.values('jogador__nome').annotate(
+                avg_score=Avg('pontuacao'), total_score=Sum('pontuacao')
+            ).order_by('-total_score')
             
             return Response({
                 "accuracy_per_question": list(accuracy_per_question),
@@ -120,10 +131,12 @@ class QuizAnalysisView(APIView):
                 "progressive_difficulty": list(progressive_difficulty),
                 "time_usage": list(time_usage),
                 "group_performance": list(group_performance),
+                "player_comparison": list(player_comparison),
             })
         
         except Quiz.DoesNotExist:
             return Response({"error": "Quiz não encontrado"}, status=404)
+
 
 
 def generate_room_code():
