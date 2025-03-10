@@ -1,4 +1,4 @@
-from django.urls import path, include
+from django.urls import path
 from rest_framework.routers import DefaultRouter
 from .views import QuizViewSet, home, jogar_quiz, iniciar_quiz, sala_espera, QuizAnalysisView
 from django.contrib.auth import views as auth_views

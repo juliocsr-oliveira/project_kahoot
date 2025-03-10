@@ -5,6 +5,7 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
 from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
 from .models import Quiz, Pergunta, Resposta, RespostaUsuario, Sala, Jogador
 from .serializers import QuizSerializer
 import random
