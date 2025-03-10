@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Visualizar Dashboard</title>
+</head>
+<body>
+    <h2>O quiz foi finalizado!</h2>
+    <p>Deseja visualizar o dashboard com as análises dos resultados?</p>
+    
+    <form method="GET" action="{% url 'quiz_dashboard' quiz_id %}">
+        <button type="submit">Sim, mostrar dashboard</button>
+    </form>
+
+    <form method="POST" action="{% url 'home' %}">
+        {% csrf_token %}
+        <button type="submit">Não, voltar para a página inicial</button>
+    </form>
+</body>
+</html>

@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import QuizViewSet, home, jogar_quiz, iniciar_quiz, sala_espera, DataAnalysisView
+from .views import QuizViewSet, home, jogar_quiz, iniciar_quiz, sala_espera, QuizAnalysisView
 from django.contrib.auth import views as auth_views
 from account.views import UnifiedLoginView  
 
@@ -15,5 +15,7 @@ urlpatterns = [
     path('sala-espera/<int:sala_id>/', sala_espera, name='sala_espera'),
     path('login/', UnifiedLoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='/'), name='logout'),
-    path('api/analise-dados/', DataAnalysisView.as_view(), name='analise-dados'),
+    path('api/analise-dados/', QuizAnalysisView.as_view(), name='analise-dados'),
+    path('quiz/<int:quiz_id>/dashboard/', QuizAnalysisView.as_view(), name='quiz_dashboard'),
+
 ]
