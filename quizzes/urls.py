@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import QuizViewSet, home, jogar_quiz, iniciar_quiz, sala_espera, DataAnalysisView
 from django.contrib.auth import views as auth_views
-from account.views import UnifiedLoginView  # Importar a view do arquivo correto
+from account.views import UnifiedLoginView  
 
 router = DefaultRouter()
 router.register(r'quizzes', QuizViewSet)

@@ -1,23 +1,15 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from rest_framework import viewsets
-from .models import Quiz, Sala, Jogador
-from .serializers import QuizSerializer
-from rest_framework import permissions
+from django.http import JsonResponse, HttpResponse
+from django.db.models import Count, Avg, StdDev, F, Sum, Max, Min, Q
+from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from django.core.exceptions import ValidationError
-from django.contrib.auth import views as auth_views
 from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
-from django.shortcuts import redirect
-from .models import Quiz, Pergunta, Resposta
+from .models import Quiz, Pergunta, Resposta, RespostaUsuario, Sala, Jogador
+from .serializers import QuizSerializer
 import random
 import string
 import time
-from rest_framework import status
-from django.db.models import Count, F, Avg, Sum, StdDev, F
-from .models import Quiz, Pergunta, Resposta, Sala, Jogador, RespostaUsuario
-from rest_framework.views import APIView
 
 
 class QuizViewSet(viewsets.ModelViewSet):
@@ -58,66 +50,63 @@ class QuizViewSet(viewsets.ModelViewSet):
 
         return response
 
-from django.db.models import Count, Avg, StdDev, F, Sum
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework.permissions import IsAuthenticated
-from .models import Quiz, Pergunta, Resposta, RespostaUsuario
-
 class QuizAnalysisView(APIView):
     permission_classes = [IsAuthenticated]
     
     def get(self, request, quiz_id):
         try:
-            quiz = Quiz.objects.get(id=quiz_id)
+            quiz = get_object_or_404(Quiz, id=quiz_id)
             perguntas = Pergunta.objects.filter(quiz=quiz)
             respostas_usuario = RespostaUsuario.objects.filter(pergunta__in=perguntas)
-            
+
             # Média de acertos por questão
             accuracy_per_question = perguntas.annotate(
-                correct_count=Count('respostausuario', filter=F('respostausuario__correta'))
-            ).values('id', 'texto', 'correct_count')
-            
-            # Tempo médio de resposta por pergunta
+                correct_count=Count('respostausuario', filter=Q(respostausuario__correta=True)),
+                total_attempts=Count('respostausuario')
+            ).values('id', 'texto', 'correct_count', 'total_attempts')
+
+            # Tempo médio de resposta
             avg_response_time = respostas_usuario.values('pergunta_id').annotate(avg_time=Avg('tempo_resposta'))
-            
+
             # Questão mais fácil e mais difícil
             most_correct = accuracy_per_question.order_by('-correct_count').first()
             least_correct = accuracy_per_question.order_by('correct_count').first()
-            
-            # Média de pontuação da turma
+
+            # Média e desvio padrão da pontuação
             avg_score = respostas_usuario.aggregate(Avg('pontuacao'))
-            
-            # Desvio padrão da pontuação
             std_dev_score = respostas_usuario.aggregate(StdDev('pontuacao'))
-            
-            # Distribuição das respostas
+
+            # Distribuição das respostas por alternativa
             answer_distribution = Resposta.objects.filter(pergunta__in=perguntas).annotate(
                 selected_count=Count('respostausuario')
             ).values('pergunta_id', 'texto', 'selected_count')
-            
-            # Ranking de eficiência por jogador
+
+            # Eficiência por jogador
             efficiency_ranking = respostas_usuario.values('jogador__nome').annotate(
                 total_score=Sum('pontuacao'), avg_time=Avg('tempo_resposta')
             ).order_by('-total_score', 'avg_time')
-            
-            # Dificuldade progressiva
-            progressive_difficulty = respostas_usuario.values('pergunta_id').annotate(
-                correct_count=Count('id', filter=F('correta'))
-            ).order_by('pergunta_id')
-            
+
+            # Comparação de jogadores
+            player_comparison = Jogador.objects.filter(sala__quiz=quiz).values('nome', 'pontuacao').order_by('-pontuacao')
+
+            # Dificuldade progressiva (taxa de acerto ao longo do quiz)
+            progressive_difficulty = respostas_usuario.values('pergunta__numero').annotate(
+                correct_answers=Count('id', filter=Q(correta=True)),
+                total_attempts=Count('id'),
+                accuracy=F('correct_answers') * 100.0 / F('total_attempts')
+            ).order_by('pergunta__numero')
+
             # Impacto do tempo limite
-            time_usage = respostas_usuario.values('pergunta_id').annotate(
-                avg_time=Avg('tempo_resposta'), max_time=F('pergunta__tempo_resposta')
+            time_limit_impact = respostas_usuario.values('pergunta_id').annotate(
+                avg_time=Avg('tempo_resposta'),
+                max_time=Max('tempo_resposta'),
+                min_time=Min('tempo_resposta')
             )
-            
-            # Comparação entre grupos/turmas (se houver grupos na plataforma)
-            group_performance = respostas_usuario.values('jogador__sala').annotate(avg_score=Avg('pontuacao'))
-            
-            # Comparação entre jogadores
-            player_comparison = respostas_usuario.values('jogador__nome').annotate(
-                avg_score=Avg('pontuacao'), total_score=Sum('pontuacao')
-            ).order_by('-total_score')
+            if request.user == quiz.criador:
+                visualizar_dashboard = request.GET.get('ver_dashboard', 'false').lower() == 'true'
+                if visualizar_dashboard:
+                    return redirect(f'/dashboard/{quiz_id}')
+
             
             return Response({
                 "accuracy_per_question": list(accuracy_per_question),
@@ -128,16 +117,13 @@ class QuizAnalysisView(APIView):
                 "std_dev_score": std_dev_score,
                 "answer_distribution": list(answer_distribution),
                 "efficiency_ranking": list(efficiency_ranking),
-                "progressive_difficulty": list(progressive_difficulty),
-                "time_usage": list(time_usage),
-                "group_performance": list(group_performance),
                 "player_comparison": list(player_comparison),
+                "progressive_difficulty": list(progressive_difficulty),
+                "time_limit_impact": list(time_limit_impact),
             })
         
         except Quiz.DoesNotExist:
             return Response({"error": "Quiz não encontrado"}, status=404)
-
-
 
 def generate_room_code():
     while True:
@@ -206,28 +192,6 @@ def sala_espera(request, sala_id):
         return redirect('jogar_quiz', quiz_id=sala.quiz.id)
 
     return render(request, 'quizzes/sala_espera.html', {'sala': sala, 'jogadores': jogadores})
-
-
-class DataAnalysisView(APIView):
-    permission_classes = [IsAuthenticated]
-
-    def get(self, request):
-        total_quizzes = Quiz.objects.count()
-        total_respostas = Resposta.objects.count()
-        media_pontuacao = Resposta.objects.aggregate(media=Avg('pontuacao'))
-        max_pontuacao = Resposta.objects.aggregate(max=Max('pontuacao'))
-        min_pontuacao = Resposta.objects.aggregate(min=Min('pontuacao'))
-        usuarios_participantes = Resposta.objects.values('usuario').distinct().count()
-
-        data = {
-            "total_quizzes": total_quizzes,
-            "total_respostas": total_respostas,
-            "media_pontuacao": media_pontuacao['media'],
-            "max_pontuacao": max_pontuacao['max'],
-            "min_pontuacao": min_pontuacao['min'],
-            "usuarios_participantes": usuarios_participantes
-        }
-        return Response(data)
 
 @api_view(['GET'])
 def api_home(request):
