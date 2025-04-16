@@ -32,7 +32,7 @@ class PasswordResetRequestSerializer(serializers.Serializer):
 
     def validate_email(self, value):
         if not User.objects.filter(email=value).exists():
-            raise serializers.ValidationError("No user is associated with this email address")
+            raise serializers.ValidationError("O email não está associado a nenhuma conta.")
         return value
 
 class PasswordResetConfirmSerializer(serializers.Serializer):

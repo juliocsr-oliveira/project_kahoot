@@ -60,44 +60,35 @@ class QuizAnalysisView(APIView):
             perguntas = Pergunta.objects.filter(quiz=quiz)
             respostas_usuario = RespostaUsuario.objects.filter(pergunta__in=perguntas)
 
-            # Média de acertos por questão
             accuracy_per_question = perguntas.annotate(
                 correct_count=Count('respostausuario', filter=Q(respostausuario__correta=True)),
                 total_attempts=Count('respostausuario')
             ).values('id', 'texto', 'correct_count', 'total_attempts')
 
-            # Tempo médio de resposta
             avg_response_time = respostas_usuario.values('pergunta_id').annotate(avg_time=Avg('tempo_resposta'))
 
-            # Questão mais fácil e mais difícil
             most_correct = accuracy_per_question.order_by('-correct_count').first()
             least_correct = accuracy_per_question.order_by('correct_count').first()
 
-            # Média e desvio padrão da pontuação
             avg_score = respostas_usuario.aggregate(Avg('pontuacao'))
             std_dev_score = respostas_usuario.aggregate(StdDev('pontuacao'))
 
-            # Distribuição das respostas por alternativa
             answer_distribution = Resposta.objects.filter(pergunta__in=perguntas).annotate(
                 selected_count=Count('respostausuario')
             ).values('pergunta_id', 'texto', 'selected_count')
 
-            # Eficiência por jogador
             efficiency_ranking = respostas_usuario.values('jogador__nome').annotate(
                 total_score=Sum('pontuacao'), avg_time=Avg('tempo_resposta')
             ).order_by('-total_score', 'avg_time')
 
-            # Comparação de jogadores
             player_comparison = Jogador.objects.filter(sala__quiz=quiz).values('nome', 'pontuacao').order_by('-pontuacao')
 
-            # Dificuldade progressiva (taxa de acerto ao longo do quiz)
             progressive_difficulty = respostas_usuario.values('pergunta__numero').annotate(
                 correct_answers=Count('id', filter=Q(correta=True)),
                 total_attempts=Count('id'),
                 accuracy=F('correct_answers') * 100.0 / F('total_attempts')
             ).order_by('pergunta__numero')
 
-            # Impacto do tempo limite
             time_limit_impact = respostas_usuario.values('pergunta_id').annotate(
                 avg_time=Avg('tempo_resposta'),
                 max_time=Max('tempo_resposta'),

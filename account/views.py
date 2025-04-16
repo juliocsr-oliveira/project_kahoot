@@ -25,7 +25,6 @@ class UnifiedLoginView(APIView):
         return render(request, 'quizzes/login.html')
     
     def post(self, request, *args, **kwargs):
-        # Se a requisição for JSON (para API), faz login com JWT
         if request.content_type == "application/json":
             username = request.data.get('username')
             password = request.data.get('password')
@@ -40,7 +39,6 @@ class UnifiedLoginView(APIView):
             else:
                 return Response({"error": "Credenciais inválidas"}, status=status.HTTP_401_UNAUTHORIZED)
 
-        # Caso contrário, processa login tradicional via formulário
         else:
             username = request.POST.get('username')
             password = request.POST.get('password')
@@ -48,7 +46,7 @@ class UnifiedLoginView(APIView):
             user = authenticate(request, username=username, password=password)
             if user is not None:
                 login(request, user)
-                return redirect('/')  # Redireciona para a home se login for bem-sucedido
+                return redirect('/')
             else:
                 return JsonResponse({"error": "Credenciais inválidas"}, status=401)
 
@@ -75,7 +73,7 @@ class LogoutView(APIView):
             refresh_token = request.data.get("refresh")
             token = RefreshToken(refresh_token)
             token.blacklist()
-            return redirect('/')  # Redireciona para a home após logout
+            return redirect('/') 
         except Exception as e:
             return Response({"error": "Erro ao realizar logout."}, status=status.HTTP_400_BAD_REQUEST)
 
@@ -99,7 +97,7 @@ class PasswordResetRequestView(APIView):
                 [user.email],
                 fail_silently=False,
             )
-        return redirect('/login/')  # Redireciona para a página de login após redefinição de senha
+        return redirect('/login/')
 
 class PasswordResetConfirmView(APIView):
     permission_classes = [permissions.AllowAny]
