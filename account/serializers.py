@@ -14,7 +14,7 @@ class RegisterSerializer(serializers.ModelSerializer):
         fields = ['username', 'email', 'password1', 'password2']
 
     def validate(self, attrs):
-        if attrs['password'] != attrs['password2']:
+        if attrs['password1'] != attrs['password2']:
             raise serializers.ValidationError({'password': 'A senha digitada não confere.'})
         return attrs
 
@@ -23,7 +23,7 @@ class RegisterSerializer(serializers.ModelSerializer):
             username=validated_data['username'],
             email=validated_data['email']
 )
-        user.set_password(validated_data['password'])
+        user.set_password(validated_data['password1'])
         user.save()
         return user
 
