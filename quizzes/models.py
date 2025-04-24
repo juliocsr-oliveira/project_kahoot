@@ -47,7 +47,7 @@ class Sala(models.Model):
     codigo = models.CharField(max_length=10, unique=True, blank=True)
     data_criacao = models.DateTimeField(auto_now_add=True)
     ativa = models.BooleanField(default=True)
-    iniciada = models.BooleanField(default=False)  # Indica se a sala foi iniciada pelo host
+    iniciada = models.BooleanField(default=False)  
 
     def save(self, *args, **kwargs):
         if not self.codigo:
