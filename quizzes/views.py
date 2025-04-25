@@ -11,6 +11,8 @@ from .serializers import QuizSerializer
 import random
 import string
 import time
+from django.shortcuts import render
+from django.contrib.auth.decorators import login_required
 
 
 class QuizViewSet(viewsets.ModelViewSet):
@@ -188,6 +190,10 @@ def sala_espera(request, sala_id):
 @api_view(['GET'])
 def api_home(request):
     return Response({"message": "API está funcionando"})
+
+@login_required
+def quiz_create_page(request):
+    return render(request, 'quizzes/quiz_create.html')
 
 @api_view(['GET'])
 def api_root(request):
