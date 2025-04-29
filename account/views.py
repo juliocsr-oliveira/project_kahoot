@@ -12,11 +12,14 @@ from django.utils.encoding import force_bytes
 from django.contrib.auth.tokens import default_token_generator
 from django.urls import reverse
 import logging
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 
 
 logger = logging.getLogger(__name__)
 
 User = get_user_model()
+@method_decorator(csrf_exempt, name='dispatch')
 
 class UnifiedLoginView(APIView):
     permission_classes = [permissions.AllowAny]
