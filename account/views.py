@@ -14,6 +14,20 @@ from django.urls import reverse
 import logging
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
+from django.http import JsonResponse
+
+from django.utils.deprecation import MiddlewareMixin
+from django.conf import settings
+
+class DisableCSRFMiddleware(MiddlewareMixin):
+    def process_request(self, request):
+        if request.path.startswith('/api/'):
+            setattr(request, '_dont_enforce_csrf_checks', True)
+
+
+@csrf_exempt
+def teste_csrf(request):
+    return JsonResponse({"PASSOU": True}) 
 
 
 logger = logging.getLogger(__name__)

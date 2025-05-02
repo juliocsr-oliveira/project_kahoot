@@ -1,6 +1,7 @@
 from django.urls import path
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
 from .views import RegisterView, LogoutView, PasswordResetRequestView, PasswordResetConfirmView, UnifiedLoginView
+from .views import teste_csrf
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
@@ -9,4 +10,6 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(), name='logout'),
     path('password-reset/', PasswordResetRequestView.as_view(), name='password_reset_request'),
     path('password-reset-confirm/<uidb64>/<token>/', PasswordResetRequestView.as_view(), name='password_reset_confirm'),
+    path('teste-csrf/', teste_csrf),
+
 ]
