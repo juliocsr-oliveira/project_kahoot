@@ -6,15 +6,15 @@
     <title>Login</title>
 </head>
 <body>
-    <h1>Login</h1>
-    <form method="post" action="{% url 'login' %}">
+    <form method="POST" action="/quizzes/login/">
         {% csrf_token %}
-        <label for="username">Username:</label>
-        <input type="text" id="username" name="username" required><br>
-        <label for="password">Password:</label>
-        <input type="password" id="password" name="password" required><br>
-        <button type="submit">Login</button>
-    </form>
+        <input type="text" name="username" placeholder="Usuário">
+        <input type="password" name="password" placeholder="Senha">
+        {% if error %}
+          <p style="color: red;">{{ error }}</p>
+        {% endif %}
+        <button type="submit">Entrar</button>
+      </form>      
     <p>Não tem uma conta? <a href="{% url 'register' %}">Crie uma agora</a></p> <!-- Adicionado link para registro -->
 </body>
 </html>

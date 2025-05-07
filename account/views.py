@@ -14,12 +14,15 @@ from django.urls import reverse
 import logging
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
-from django.http import JsonResponse
-
 from django.utils.deprecation import MiddlewareMixin
-from django.conf import settings
 
 class DisableCSRFMiddleware(MiddlewareMixin):
+    """
+    Middleware para desabilitar a verificação de CSRF em rotas que começam com '/api/'.
+
+    Métodos:
+        - process_request: Desabilita a verificação de CSRF para requisições que correspondem ao prefixo '/api/'.
+    """
     def process_request(self, request):
         if request.path.startswith('/api/'):
             setattr(request, '_dont_enforce_csrf_checks', True)
@@ -27,7 +30,13 @@ class DisableCSRFMiddleware(MiddlewareMixin):
 
 @csrf_exempt
 def teste_csrf(request):
-    return JsonResponse({"PASSOU": True}) 
+    """
+    Endpoint de teste para verificar se a verificação de CSRF foi desabilitada.
+
+    Retorno:
+        - JsonResponse: Retorna {"PASSOU": True}.
+    """
+    return JsonResponse({"PASSOU": True})
 
 
 logger = logging.getLogger(__name__)
@@ -36,71 +45,177 @@ User = get_user_model()
 @method_decorator(csrf_exempt, name='dispatch')
 
 class UnifiedLoginView(APIView):
+    """
+    APIView para gerenciar o login de usuários.
+
+    Métodos:
+        - get: Renderiza a página de login.
+        - post: Autentica o usuário e retorna tokens JWT ou redireciona para a página inicial.
+
+    Permissões:
+        - Permite acesso a qualquer usuário (autenticado ou não).
+    """
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, *args, **kwargs):
-        return render(request, 'quizzes/login.html')
-    
-    def post(self, request, *args, **kwargs):
-        if request.content_type == "application/json":
-            username = request.data.get('username')
-            password = request.data.get('password')
+        """
+        Renderiza a página de login.
 
-            user = authenticate(username=username, password=password)
-            if user is not None:
+        Retorno:
+            - Template HTML da página de login.
+        """
+        return render(request, 'quizzes/login.html')
+
+    def post(self, request, *args, **kwargs):
+        """
+        Autentica o usuário com base nas credenciais fornecidas.
+
+        Processamento:
+            - Verifica se o username e password foram fornecidos.
+            - Autentica o usuário.
+            - Retorna tokens JWT para requisições JSON ou redireciona para a página inicial.
+
+        Retorno:
+            - 200 OK: Login bem-sucedido.
+            - 400 Bad Request: Credenciais ausentes.
+            - 401 Unauthorized: Credenciais inválidas.
+        """
+        username = request.data.get('username') or request.POST.get('username')
+        password = request.data.get('password') or request.POST.get('password')
+
+        if not username or not password:
+            error_response = {"error": "Usuário e senha são obrigatórios."}
+            if request.content_type.startswith("application/json"):
+                return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+            return render(request, 'quizzes/login.html', {"error": error_response["error"]})
+
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            if request.content_type.startswith("application/json"):
                 refresh = RefreshToken.for_user(user)
                 return Response({
                     "refresh": str(refresh),
                     "access": str(refresh.access_token),
                 }, status=status.HTTP_200_OK)
             else:
-                return Response({"error": "Credenciais inválidas"}, status=status.HTTP_401_UNAUTHORIZED)
-
-        else:
-            username = request.POST.get('username')
-            password = request.POST.get('password')
-
-            user = authenticate(request, username=username, password=password)
-            if user is not None:
                 login(request, user)
                 return redirect('/')
-            else:
-                return JsonResponse({"error": "Credenciais inválidas"}, status=401)
+        else:
+            error_response = {"error": "Credenciais inválidas"}
+            if request.content_type.startswith("application/json"):
+                return Response(error_response, status=status.HTTP_401_UNAUTHORIZED)
+            return render(request, 'quizzes/login.html', {"error": error_response["error"]})
+
 
 class RegisterView(APIView):
+    """
+    APIView para gerenciar o registro de novos usuários.
+
+    Métodos:
+        - get: Renderiza a página de registro.
+        - post: Registra um novo usuário e redireciona para a página de login.
+
+    Permissões:
+        - Permite acesso a qualquer usuário (autenticado ou não).
+    """
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
+        """
+        Renderiza a página de registro.
+
+        Retorno:
+            - Template HTML da página de registro.
+        """
         return render(request, 'quizzes/register.html')
 
     def post(self, request):
-        print("dados", request.data)
+        """
+        Registra um novo usuário com base nos dados fornecidos.
+
+        Processamento:
+            - Valida os dados fornecidos.
+            - Cria um novo usuário.
+            - Redireciona para a página de login.
+
+        Retorno:
+            - 302 Found: Redireciona para a página de login após o registro bem-sucedido.
+            - 400 Bad Request: Dados inválidos.
+        """
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            refresh = RefreshToken.for_user(user)
-            return redirect(reverse('login')) 
+            return redirect(reverse('login'))
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
+
 class LogoutView(APIView):
+    """
+    APIView para gerenciar o logout de usuários.
+
+    Métodos:
+        - post: Invalida o token de refresh e redireciona para a página inicial.
+
+    Permissões:
+        - Apenas usuários autenticados podem acessar esta view.
+    """
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        """
+        Realiza o logout do usuário.
+
+        Processamento:
+            - Invalida o token de refresh fornecido.
+            - Redireciona para a página inicial.
+
+        Retorno:
+            - 302 Found: Redireciona para a página inicial após o logout.
+            - 400 Bad Request: Caso ocorra um erro ao invalidar o token.
+        """
         try:
             refresh_token = request.data.get("refresh")
             token = RefreshToken(refresh_token)
             token.blacklist()
-            return redirect('/') 
+            return redirect('/')
         except Exception as e:
             return Response({"error": "Erro ao realizar logout."}, status=status.HTTP_400_BAD_REQUEST)
 
+
 class PasswordResetRequestView(APIView):
+    """
+    APIView para gerenciar solicitações de redefinição de senha.
+
+    Métodos:
+        - get: Renderiza a página de solicitação de redefinição de senha.
+        - post: Envia um e-mail com o link para redefinição de senha.
+
+    Permissões:
+        - Permite acesso a qualquer usuário (autenticado ou não).
+    """
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
+        """
+        Renderiza a página de solicitação de redefinição de senha.
+
+        Retorno:
+            - Template HTML da página de solicitação de redefinição de senha.
+        """
         return render(request, 'quizzes/password_reset.html')
 
     def post(self, request):
+        """
+        Envia um e-mail com o link para redefinição de senha.
+
+        Processamento:
+            - Verifica se o e-mail fornecido está associado a um usuário.
+            - Gera um token de redefinição de senha.
+            - Envia o link de redefinição de senha por e-mail.
+
+        Retorno:
+            - 302 Found: Redireciona para a página de login após o envio do e-mail.
+        """
         email = request.data.get("email")
         user = User.objects.filter(email=email).first()
         if user:
@@ -116,13 +231,41 @@ class PasswordResetRequestView(APIView):
             )
         return redirect('/login/')
 
+
 class PasswordResetConfirmView(APIView):
+    """
+    APIView para confirmar a redefinição de senha.
+
+    Métodos:
+        - get: Renderiza a página de confirmação de redefinição de senha.
+        - post: Redefine a senha do usuário.
+
+    Permissões:
+        - Permite acesso a qualquer usuário (autenticado ou não).
+    """
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, uidb64, token):
+        """
+        Renderiza a página de confirmação de redefinição de senha.
+
+        Retorno:
+            - Template HTML da página de confirmação de redefinição de senha.
+        """
         return render(request, 'quizzes/password_reset_confirm.html', {'uidb64': uidb64, 'token': token})
 
     def post(self, request, uidb64, token):
+        """
+        Redefine a senha do usuário.
+
+        Processamento:
+            - Valida os dados fornecidos.
+            - Atualiza a senha do usuário.
+
+        Retorno:
+            - 200 OK: Senha redefinida com sucesso.
+            - 400 Bad Request: Dados inválidos.
+        """
         serializer = PasswordResetConfirmSerializer(data=request.data)
         if serializer.is_valid():
             serializer.save()

@@ -16,47 +16,91 @@ from django.contrib.auth.decorators import login_required
 
 
 class QuizViewSet(viewsets.ModelViewSet):
+    """
+    ViewSet para gerenciar quizzes.
+
+    Métodos:
+        - create: Cria um novo quiz com perguntas e respostas associadas.
+    
+    Permissões:
+        - Apenas usuários autenticados podem acessar este ViewSet.
+    """
     queryset = Quiz.objects.all()
     serializer_class = QuizSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
-        perguntas_data = request.data.get("perguntas", [])
+        """
+        Cria um novo quiz com pelo menos 3 perguntas.
 
+        Validações:
+            - O quiz deve conter pelo menos 3 perguntas.
+        
+        Processamento:
+            - Cria o quiz e associa perguntas e respostas fornecidas no payload.
+
+        Retorno:
+            - 201 Created: Quiz criado com sucesso.
+            - 400 Bad Request: Caso o quiz tenha menos de 3 perguntas.
+        """
+        perguntas_data = request.data.get("perguntas", [])
         if len(perguntas_data) < 3:
             return Response(
                 {"detail": "O quiz deve ter pelo menos 3 perguntas."}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
-
         response = super().create(request, *args, **kwargs)
         quiz_id = response.data.get("id")
 
         if quiz_id:
             quiz = Quiz.objects.get(id=quiz_id)
-
             for pergunta in perguntas_data:
                 nova_pergunta = Pergunta.objects.create(
                     quiz=quiz,
                     texto=pergunta["texto"],
                     tipo=pergunta["tipo"],
                 )
-
                 for resposta in pergunta.get("respostas", []):
                     Resposta.objects.create(
                         pergunta=nova_pergunta,
                         texto=resposta["texto"],
                         correta=(str(resposta["correta"]) == "True")
                     )
-
             quiz.save()
-
         return response
 
+
 class QuizAnalysisView(APIView):
-    permission_classes = [IsAuthenticated]
+    """
+    APIView para análise de dados de quizzes.
+
+    Métodos:
+        - get: Retorna estatísticas detalhadas sobre um quiz específico.
     
+    Permissões:
+        - Apenas usuários autenticados podem acessar esta view.
+    """
+    permission_classes = [IsAuthenticated]
+
     def get(self, request, quiz_id):
+        """
+        Retorna estatísticas detalhadas sobre um quiz.
+
+        Estatísticas Incluídas:
+            - Precisão por pergunta.
+            - Tempo médio de resposta.
+            - Perguntas mais e menos acertadas.
+            - Pontuação média e desvio padrão.
+            - Distribuição de respostas.
+            - Ranking de eficiência dos jogadores.
+            - Comparação entre jogadores.
+            - Dificuldade progressiva.
+            - Impacto do limite de tempo.
+
+        Retorno:
+            - 200 OK: Dados de análise do quiz.
+            - 404 Not Found: Caso o quiz não seja encontrado.
+        """
         try:
             quiz = get_object_or_404(Quiz, id=quiz_id)
             perguntas = Pergunta.objects.filter(quiz=quiz)
@@ -101,7 +145,6 @@ class QuizAnalysisView(APIView):
                 if visualizar_dashboard:
                     return redirect(f'/dashboard/{quiz_id}')
 
-            
             return Response({
                 "accuracy_per_question": list(accuracy_per_question),
                 "avg_response_time": list(avg_response_time),
@@ -119,13 +162,30 @@ class QuizAnalysisView(APIView):
         except Quiz.DoesNotExist:
             return Response({"error": "Quiz não encontrado"}, status=404)
 
+
 def generate_room_code():
+    """
+    Gera um código único para uma sala.
+
+    Retorno:
+        - Código alfanumérico de 6 caracteres.
+    """
     while True:
         codigo = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
         if not Sala.objects.filter(codigo=codigo).exists():
             return codigo
 
+
 def home(request):
+    """
+    Renderiza a página inicial com a lista de quizzes.
+
+    Processamento:
+        - Obtém todos os quizzes e verifica se há uma sala ativa associada.
+
+    Retorno:
+        - Página HTML com a lista de quizzes.
+    """
     quizzes = Quiz.objects.all()
     for quiz in quizzes:
         quiz.sala_ativa = Sala.objects.filter(quiz=quiz, ativa=True).first()
@@ -186,10 +246,6 @@ def sala_espera(request, sala_id):
         return redirect('jogar_quiz', quiz_id=sala.quiz.id)
 
     return render(request, 'quizzes/sala_espera.html', {'sala': sala, 'jogadores': jogadores})
-
-@api_view(['GET'])
-def api_home(request):
-    return Response({"message": "API está funcionando"})
 
 @login_required
 def quiz_create_page(request):
