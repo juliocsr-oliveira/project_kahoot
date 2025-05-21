@@ -145,8 +145,8 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            return redirect(reverse('login'))
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"success": "Conta criada com sucesso!"}, status=status.HTTP_201_CREATED)
+        else: return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class LogoutView(APIView):

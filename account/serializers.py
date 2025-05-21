@@ -52,13 +52,13 @@ class RegisterSerializer(serializers.ModelSerializer):
         Retorno:
             - user: Instância do usuário criado.
         """
-        user = User.objects.create_user(
-            username=validated_data['username'],
-            email=validated_data['email']
-        )
-        user.set_password(validated_data['password1'])
-        user.save()
+        validated_data.pop('password2')
+        password = validated_data.pop('password1')
+        user = User(**validated_data)   
+        user.set_password(password)
+        user.save() 
         return user
+    
 
 
 class PasswordResetRequestSerializer(serializers.Serializer):
