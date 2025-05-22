@@ -54,8 +54,11 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework.authentication.SessionAuthentication',
         'rest_framework.authentication.BasicAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ),
 }
+
+SITE_ID = 1
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=15),
@@ -84,7 +87,7 @@ MIDDLEWARE.insert(1, 'corsheaders.middleware.CorsMiddleware')  # ✅ Adicione lo
 
 CORS_ALLOW_CREDENTIALS = True  # ✅ Permite envio de cookies (sessões, CSRF)
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",  # ✅ Adapte para o seu frontend
+    "http://localhost:8081",  # ✅ Adapte para o seu frontend
     'http://127.0.0.1:8000',
 ]
 

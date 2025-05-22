@@ -16,6 +16,27 @@ from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.utils.deprecation import MiddlewareMixin
 
+User = get_user_model()
+
+class CurrentUserView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """
+        Retorna os dados do usuário autenticado.
+
+        Retorno:
+            - JsonResponse: Dados do usuário autenticado.
+        """
+        user = request.user
+        data = {
+            'id': user.id,
+            'username': user.username,
+            'email': user.email,
+        }
+        return JsonResponse(data)
+    
+    
 class DisableCSRFMiddleware(MiddlewareMixin):
     """
     Middleware para desabilitar a verificação de CSRF em rotas que começam com '/api/'.

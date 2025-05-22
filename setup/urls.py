@@ -14,6 +14,7 @@ urlpatterns = [
     path('account/', include('django.contrib.auth.urls')),
     path('', home, name='home'),
     path('api/quizzes/', include('quizzes.urls')),
+    path('api/auth/', include('dj_rest_auth.urls')),
 ]
 
 urlpatterns += [
