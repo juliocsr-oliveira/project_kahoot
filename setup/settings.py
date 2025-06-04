@@ -74,6 +74,7 @@ SIMPLE_JWT = {
 AUTH_USER_MODEL = 'account.CustomUser'
 
 MIDDLEWARE = [
+    'account.views.DisableCSRFMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -93,7 +94,7 @@ CORS_ALLOWED_ORIGINS = [
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    "http://localhost:3000",  # ✅ Permite que o frontend acesse recursos protegidos
+    "http://localhost:8081",  # ✅ Permite que o frontend acesse recursos protegidos
 ]
 CSRF_COOKIE_HTTPONLY = True
 CSRF_COOKIE_HTTPONLY = False  # ✅ Permite que o frontend acesse o cookie CSRF (remova após testes)
