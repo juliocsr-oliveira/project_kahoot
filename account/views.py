@@ -4,7 +4,7 @@ from rest_framework import status, permissions
 from rest_framework_simplejwt.tokens import RefreshToken
 from django.contrib.auth import get_user_model, authenticate, login
 from django.shortcuts import redirect, render
-from .serializers import RegisterSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer
+from .serializers import UserSerializer, RegisterSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer
 from django.http import JsonResponse
 from django.core.mail import send_mail
 from django.utils.http import urlsafe_base64_encode
@@ -15,6 +15,7 @@ import logging
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 from django.utils.deprecation import MiddlewareMixin
+from rest_framework import permissions
 
 User = get_user_model()
 
@@ -29,12 +30,8 @@ class CurrentUserView(APIView):
             - JsonResponse: Dados do usuário autenticado.
         """
         user = request.user
-        data = {
-            'id': user.id,
-            'username': user.username,
-            'email': user.email,
-        }
-        return JsonResponse(data)
+        serializer = UserSerializer(user)
+        return Response(serializer.data)
     
     
 class DisableCSRFMiddleware(MiddlewareMixin):
@@ -108,7 +105,7 @@ class UnifiedLoginView(APIView):
             error_response = {"error": "Usuário e senha são obrigatórios."}
             if request.content_type.startswith("application/json"):
                 return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
-            return render(request, 'quizzes/login.html', {"error": error_response["error"]})
+            return render(request, 'account/login.html', {"error": error_response["error"]})
 
         user = authenticate(request, username=username, password=password)
         if user is not None:
@@ -125,7 +122,7 @@ class UnifiedLoginView(APIView):
             error_response = {"error": "Credenciais inválidas"}
             if request.content_type.startswith("application/json"):
                 return Response(error_response, status=status.HTTP_401_UNAUTHORIZED)
-            return render(request, 'quizzes/login.html', {"error": error_response["error"]})
+            return render(request, 'account/login.html', {"error": error_response["error"]})
 
 
 class RegisterView(APIView):

@@ -5,6 +5,13 @@ from django.utils.encoding import force_str
 
 User = get_user_model()
 
+class UserSerializer(serializers.ModelSerializer):
+    id = serializers.IntegerField(source='pk', read_only=True)
+
+    class Meta:
+        model = User
+        fields = ['id', 'username', 'email', 'first_name', 'last_name']
+
 class RegisterSerializer(serializers.ModelSerializer):
     """
     Serializer para registrar novos usuários.

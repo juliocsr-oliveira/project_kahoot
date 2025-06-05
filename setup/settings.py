@@ -73,6 +73,11 @@ SIMPLE_JWT = {
 
 AUTH_USER_MODEL = 'account.CustomUser'
 
+REST_AUTH_SERIALIZERS = {
+    'USER_DETAILS_SERIALIZER': 'account.serializers.UserSerializer',
+}
+
+
 MIDDLEWARE = [
     'account.views.DisableCSRFMiddleware',
     'django.middleware.security.SecurityMiddleware',

@@ -13,7 +13,6 @@ urlpatterns = [
     path('play/<int:quiz_id>/', jogar_quiz, name='quiz_play'),
     path('iniciar/<int:sala_id>/', iniciar_quiz, name='iniciar_quiz'),
     path('sala-espera/<int:sala_id>/', sala_espera, name='sala_espera'),
-    path('login/', UnifiedLoginView.as_view(), name='login'),
     path('logout/', auth_views.LogoutView.as_view(next_page='/'), name='logout'),
     path('api/analise-dados/', QuizAnalysisView.as_view(), name='analise-dados'),
     path('quiz/<int:quiz_id>/dashboard/', QuizAnalysisView.as_view(), name='quiz_dashboard'),
