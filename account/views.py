@@ -82,7 +82,7 @@ class UnifiedLoginView(APIView):
         Retorno:
             - Template HTML da página de login.
         """
-        return render(request, 'quizzes/login.html')
+        return render(request, 'account/login.html')
 
     def post(self, request, *args, **kwargs):
         """
@@ -145,7 +145,7 @@ class RegisterView(APIView):
         Retorno:
             - Template HTML da página de registro.
         """
-        return render(request, 'quizzes/register.html')
+        return render(request, 'account/register.html')
 
     def post(self, request):
         """
@@ -220,7 +220,7 @@ class PasswordResetRequestView(APIView):
         Retorno:
             - Template HTML da página de solicitação de redefinição de senha.
         """
-        return render(request, 'quizzes/password_reset.html')
+        return render(request, 'account/password_reset.html')
 
     def post(self, request):
         """
@@ -270,7 +270,7 @@ class PasswordResetConfirmView(APIView):
         Retorno:
             - Template HTML da página de confirmação de redefinição de senha.
         """
-        return render(request, 'quizzes/password_reset_confirm.html', {'uidb64': uidb64, 'token': token})
+        return render(request, 'account/password_reset_confirm.html', {'uidb64': uidb64, 'token': token})
 
     def post(self, request, uidb64, token):
         """
