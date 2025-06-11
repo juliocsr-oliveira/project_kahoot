@@ -82,7 +82,7 @@ class UnifiedLoginView(APIView):
         Retorno:
             - Template HTML da página de login.
         """
-        return render(request, 'account/login.html')
+        return render(request, 'login.html')
 
     def post(self, request, *args, **kwargs):
         """
@@ -105,7 +105,7 @@ class UnifiedLoginView(APIView):
             error_response = {"error": "Usuário e senha são obrigatórios."}
             if request.content_type.startswith("application/json"):
                 return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
-            return render(request, 'account/login.html', {"error": error_response["error"]})
+            return render(request, 'login.html', {"error": error_response["error"]})
 
         user = authenticate(request, username=username, password=password)
         if user is not None:
@@ -114,6 +114,7 @@ class UnifiedLoginView(APIView):
                 return Response({
                     "refresh": str(refresh),
                     "access": str(refresh.access_token),
+                    "user": serializer.data
                 }, status=status.HTTP_200_OK)
             else:
                 login(request, user)
@@ -122,7 +123,7 @@ class UnifiedLoginView(APIView):
             error_response = {"error": "Credenciais inválidas"}
             if request.content_type.startswith("application/json"):
                 return Response(error_response, status=status.HTTP_401_UNAUTHORIZED)
-            return render(request, 'account/login.html', {"error": error_response["error"]})
+            return render(request, 'login.html', {"error": error_response["error"]})
 
 
 class RegisterView(APIView):
@@ -145,7 +146,7 @@ class RegisterView(APIView):
         Retorno:
             - Template HTML da página de registro.
         """
-        return render(request, 'account/register.html')
+        return render(request, 'register.html')
 
     def post(self, request):
         """

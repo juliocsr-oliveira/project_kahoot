@@ -52,7 +52,7 @@
             {% if request.user.is_authenticated %}
                 window.location.href = "{% url 'quiz_create' %}";
             {% else %}
-                window.location.href = "/api/account/login";
+                window.location.href = "api/account/login";
             {% endif %}
         }
     </script>

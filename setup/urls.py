@@ -10,15 +10,14 @@ def get_csrf_token(request):
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/account/', include('account.urls')),
-    path('api/', api_root),
-    path('account/', include('django.contrib.auth.urls')),
-    path('', home, name='home'),
-    path('api/quizzes/', include('quizzes.urls')),
-    path('api/auth/', include('dj_rest_auth.urls')),
-    path('api/auth/user/', CurrentUserView.as_view(), name='current_user'),
-]
 
-urlpatterns += [
+    path('api/', include('account.urls')),
+    path('api/', include('quizzes.urls')),
+    
+    path('api/', api_root),
+    
+    path('account/', include('django.contrib.auth.urls')),
+    
+    path('', home, name='home'),
     path('api/csrf-token/', get_csrf_token, name='csrf_token'),
 ]
