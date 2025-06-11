@@ -114,7 +114,6 @@ class UnifiedLoginView(APIView):
                 return Response({
                     "refresh": str(refresh),
                     "access": str(refresh.access_token),
-                    "user": serializer.data
                 }, status=status.HTTP_200_OK)
             else:
                 login(request, user)
