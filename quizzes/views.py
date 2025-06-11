@@ -11,38 +11,15 @@ from .serializers import QuizSerializer
 import random
 import string
 import time
-from django.shortcuts import render
 from django.contrib.auth.decorators import login_required
 
 
 class QuizViewSet(viewsets.ModelViewSet):
-    """
-    ViewSet para gerenciar quizzes.
-
-    Métodos:
-        - create: Cria um novo quiz com perguntas e respostas associadas.
-    
-    Permissões:
-        - Apenas usuários autenticados podem acessar este ViewSet.
-    """
     queryset = Quiz.objects.all()
     serializer_class = QuizSerializer
     permission_classes = [permissions.IsAuthenticated]
 
     def create(self, request, *args, **kwargs):
-        """
-        Cria um novo quiz com pelo menos 3 perguntas.
-
-        Validações:
-            - O quiz deve conter pelo menos 3 perguntas.
-        
-        Processamento:
-            - Cria o quiz e associa perguntas e respostas fornecidas no payload.
-
-        Retorno:
-            - 201 Created: Quiz criado com sucesso.
-            - 400 Bad Request: Caso o quiz tenha menos de 3 perguntas.
-        """
         perguntas_data = request.data.get("perguntas", [])
         if len(perguntas_data) < 3:
             return Response(
@@ -71,36 +48,9 @@ class QuizViewSet(viewsets.ModelViewSet):
 
 
 class QuizAnalysisView(APIView):
-    """
-    APIView para análise de dados de quizzes.
-
-    Métodos:
-        - get: Retorna estatísticas detalhadas sobre um quiz específico.
-    
-    Permissões:
-        - Apenas usuários autenticados podem acessar esta view.
-    """
     permission_classes = [IsAuthenticated]
 
     def get(self, request, quiz_id):
-        """
-        Retorna estatísticas detalhadas sobre um quiz.
-
-        Estatísticas Incluídas:
-            - Precisão por pergunta.
-            - Tempo médio de resposta.
-            - Perguntas mais e menos acertadas.
-            - Pontuação média e desvio padrão.
-            - Distribuição de respostas.
-            - Ranking de eficiência dos jogadores.
-            - Comparação entre jogadores.
-            - Dificuldade progressiva.
-            - Impacto do limite de tempo.
-
-        Retorno:
-            - 200 OK: Dados de análise do quiz.
-            - 404 Not Found: Caso o quiz não seja encontrado.
-        """
         try:
             quiz = get_object_or_404(Quiz, id=quiz_id)
             perguntas = Pergunta.objects.filter(quiz=quiz)
@@ -140,6 +90,7 @@ class QuizAnalysisView(APIView):
                 max_time=Max('tempo_resposta'),
                 min_time=Min('tempo_resposta')
             )
+
             if request.user == quiz.criador:
                 visualizar_dashboard = request.GET.get('ver_dashboard', 'false').lower() == 'true'
                 if visualizar_dashboard:
@@ -158,18 +109,11 @@ class QuizAnalysisView(APIView):
                 "progressive_difficulty": list(progressive_difficulty),
                 "time_limit_impact": list(time_limit_impact),
             })
-        
         except Quiz.DoesNotExist:
             return Response({"error": "Quiz não encontrado"}, status=404)
 
 
 def generate_room_code():
-    """
-    Gera um código único para uma sala.
-
-    Retorno:
-        - Código alfanumérico de 6 caracteres.
-    """
     while True:
         codigo = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
         if not Sala.objects.filter(codigo=codigo).exists():
@@ -177,20 +121,11 @@ def generate_room_code():
 
 
 def home(request):
-    """
-    Renderiza a página inicial com a lista de quizzes.
-
-    Processamento:
-        - Obtém todos os quizzes e verifica se há uma sala ativa associada.
-
-    Retorno:
-        - Página HTML com a lista de quizzes.
-    """
     quizzes = Quiz.objects.all()
     for quiz in quizzes:
         quiz.sala_ativa = Sala.objects.filter(quiz=quiz, ativa=True).first()
-    
     return render(request, 'quizzes/home.html', {'quizzes': quizzes})
+
 
 def iniciar_quiz(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id)
@@ -200,6 +135,7 @@ def iniciar_quiz(request, quiz_id):
     sala.iniciada = True
     sala.save()
     return redirect('jogar_quiz', quiz_id=sala.quiz.id)
+
 
 def jogar_quiz(request, quiz_id):
     quiz = get_object_or_404(Quiz, id=quiz_id)
@@ -218,18 +154,19 @@ def jogar_quiz(request, quiz_id):
             resposta_correta = pergunta.resposta_set.get(correta=True)
             inicio_tempo = time.time()
             resposta_usuario = request.POST.get(f'pergunta_{pergunta.id}')
-            tempo_resposta = max(0.001, time.time() - inicio_tempo)  # Evita divisão por zero
+            tempo_resposta = max(0.001, time.time() - inicio_tempo)
             if resposta_usuario == resposta_correta.texto:
                 pontuacao_pergunta = pergunta.pontuacao * (20 - min(20, tempo_resposta))
             else:
                 pontuacao_pergunta = 0
             pontuacao_total += pontuacao_pergunta
-        jogador.pontuacao = round(pontuacao_total, 3)  # Mantém a pontuação com até milésimos para desempate
+        jogador.pontuacao = round(pontuacao_total, 3)
         jogador.save()
         ranking = sorted(Jogador.objects.filter(sala=sala), key=lambda j: -j.pontuacao)
         return render(request, 'quizzes/resultado.html', {'ranking': ranking})
 
     return render(request, 'quizzes/quiz_play.html', {'quiz': quiz})
+
 
 def sala_espera(request, sala_id):
     sala = get_object_or_404(Sala, id=sala_id)
@@ -247,9 +184,11 @@ def sala_espera(request, sala_id):
 
     return render(request, 'quizzes/sala_espera.html', {'sala': sala, 'jogadores': jogadores})
 
+
 @login_required
 def quiz_create_page(request):
     return render(request, 'quizzes/quiz_create.html')
+
 
 @api_view(['GET'])
 def api_root(request):
