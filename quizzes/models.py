@@ -27,6 +27,11 @@ class Pergunta(models.Model):
     tipo = models.CharField(max_length=2, choices=TIPOS_PERGUNTA, default='MC')
     tempo_resposta = models.IntegerField(default=20)  # Tempo de resposta universal de 20 segundos
     pontuacao = models.IntegerField(default=10)  # Pontuação por resposta correta
+    dificuldade = [
+        ('facil', 'Fácil'),
+        ('medio', 'Médio'),
+        ('dificil', 'Difícil'),
+    ]
 
     def __str__(self):
         return self.texto

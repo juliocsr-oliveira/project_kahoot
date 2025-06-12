@@ -12,7 +12,16 @@ import random
 import string
 import time
 from django.contrib.auth.decorators import login_required
-
+from django.shortcuts import get_object_or_404
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .models import Quiz, Pergunta, Resposta
+from rest_framework import viewsets, permissions, status
+from rest_framework.response import Response
+from django.shortcuts import get_object_or_404
+from .models import Quiz, Pergunta, Resposta
+from .serializers import QuizSerializer
 
 class QuizViewSet(viewsets.ModelViewSet):
     queryset = Quiz.objects.all()
@@ -26,25 +35,44 @@ class QuizViewSet(viewsets.ModelViewSet):
                 {"detail": "O quiz deve ter pelo menos 3 perguntas."}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
+
         response = super().create(request, *args, **kwargs)
         quiz_id = response.data.get("id")
 
         if quiz_id:
             quiz = Quiz.objects.get(id=quiz_id)
             for pergunta in perguntas_data:
+                tipo = pergunta["tipo"]
+                respostas = pergunta.get("respostas", [])
+
+                # Validação do número de respostas
+                if tipo == "trueFalse" and len(respostas) != 2:
+                    return Response(
+                        {"detail": f"Pergunta '{pergunta['texto']}' deve ter 2 respostas para 'trueFalse'."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+                if tipo == "MC" and len(respostas) != 4:
+                    return Response(
+                        {"detail": f"Pergunta '{pergunta['texto']}' deve ter 4 respostas para 'MC'."},
+                        status=status.HTTP_400_BAD_REQUEST
+                    )
+
                 nova_pergunta = Pergunta.objects.create(
                     quiz=quiz,
                     texto=pergunta["texto"],
-                    tipo=pergunta["tipo"],
+                    tipo=tipo,
                 )
-                for resposta in pergunta.get("respostas", []):
+
+                for resposta in respostas:
                     Resposta.objects.create(
                         pergunta=nova_pergunta,
                         texto=resposta["texto"],
-                        correta=(str(resposta["correta"]) == "True")
+                        correta=str(resposta["correta"]).lower() == "true"
                     )
+
             quiz.save()
         return response
+
 
 
 class QuizAnalysisView(APIView):
@@ -137,35 +165,28 @@ def iniciar_quiz(request, quiz_id):
     return redirect('jogar_quiz', quiz_id=sala.quiz.id)
 
 
-def jogar_quiz(request, quiz_id):
-    quiz = get_object_or_404(Quiz, id=quiz_id)
-    sala = Sala.objects.filter(quiz=quiz, ativa=True).first()
+class JogarQuizView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    if not sala:
-        return Response({"error": "Nenhuma sala ativa encontrada para este quiz."}, status=404)
+    def get(self, request, quiz_id):
+        quiz = get_object_or_404(Quiz, id=quiz_id)
+        perguntas = Pergunta.objects.filter(quiz=quiz)
 
-    if not sala.iniciada:
-        return render(request, 'quizzes/aguardando_inicio.html', {'sala': sala})
+        perguntas_serializadas = []
+        for pergunta in perguntas:
+            respostas = Resposta.objects.filter(pergunta=pergunta)
+            perguntas_serializadas.append({
+                "text": pergunta.texto,
+                "options": [r.texto for r in respostas],
+                "correctAnswer": respostas.filter(correta=True).first().texto if respostas.filter(correta=True).exists() else None,
+                "points": pergunta.pontuacao,
+            })
 
-    if request.method == 'POST':
-        jogador = Jogador.objects.get(nome=request.user.username, sala=sala)
-        pontuacao_total = 0
-        for pergunta in quiz.pergunta_set.all():
-            resposta_correta = pergunta.resposta_set.get(correta=True)
-            inicio_tempo = time.time()
-            resposta_usuario = request.POST.get(f'pergunta_{pergunta.id}')
-            tempo_resposta = max(0.001, time.time() - inicio_tempo)
-            if resposta_usuario == resposta_correta.texto:
-                pontuacao_pergunta = pergunta.pontuacao * (20 - min(20, tempo_resposta))
-            else:
-                pontuacao_pergunta = 0
-            pontuacao_total += pontuacao_pergunta
-        jogador.pontuacao = round(pontuacao_total, 3)
-        jogador.save()
-        ranking = sorted(Jogador.objects.filter(sala=sala), key=lambda j: -j.pontuacao)
-        return render(request, 'quizzes/resultado.html', {'ranking': ranking})
+        return Response({
+            "titulo": quiz.titulo,
+            "questions": perguntas_serializadas
+        })
 
-    return render(request, 'quizzes/quiz_play.html', {'quiz': quiz})
 
 
 def sala_espera(request, sala_id):
