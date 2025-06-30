@@ -4,8 +4,6 @@ from django.db.models import Count, Avg, StdDev, F, Sum, Max, Min, Q
 from rest_framework import viewsets, permissions, status
 from rest_framework.response import Response
 from rest_framework.decorators import api_view
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
 from .models import Quiz, Pergunta, Resposta, RespostaUsuario, Sala, Jogador
 from .serializers import QuizSerializer
 import random
@@ -14,14 +12,7 @@ import time
 from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404
 from rest_framework.views import APIView
-from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
-from .models import Quiz, Pergunta, Resposta
-from rest_framework import viewsets, permissions, status
-from rest_framework.response import Response
-from django.shortcuts import get_object_or_404
-from .models import Quiz, Pergunta, Resposta
-from .serializers import QuizSerializer
 
 class QuizViewSet(viewsets.ModelViewSet):
     queryset = Quiz.objects.all()
